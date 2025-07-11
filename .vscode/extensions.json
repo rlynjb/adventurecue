@@ -1,0 +1,25 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "christian-kohler.path-intellisense",
+    "eamodio.gitlens",
+    "coenraads.bracket-pair-colorizer-2",
+    "dsznajder.es7-react-js-snippets",
+    "rbbit.typescript-hero",
+    "xabikos.javascriptsnippets",
+    "abdullahceylan.nextjs-snippets",
+    "graphql.vscode-graphql",
+    "bradlc.vscode-tailwindcss",
+    "heybourn.headwind",
+    "csstools.postcss",
+    "netlify.netlify-vscode-extension",
+    "humao.rest-client",
+    "mikestead.dotenv",
+    "streetsidesoftware.code-spell-checker",
+    "rangav.vscode-thunder-client",
+    "vscode-icons-team.vscode-icons",
+    "github.copilot",
+    "github.copilot-chat",
+  ]
+}
