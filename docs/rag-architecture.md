@@ -198,6 +198,36 @@ const processQuery = async (queryData: QueryRequest): Promise<string> => {
 };
 ```
 
+## Key Improvements
+
+### 1. **Single Initialization** 
+- The `sql` and `openai` clients are initialized once at the module level and reused by all functions
+
+### 2. **Composable Functions**
+- **`generateEmbedding()`** - Handles OpenAI embedding generation
+- **`findSimilarEmbeddings()`** - Handles database queries for similar vectors  
+- **`buildContextPrompt()`** - Formats context text from database results
+- **`generateAnswer()`** - Handles OpenAI chat completion
+- **`processQuery()`** - Orchestrates the entire query pipeline
+- **`validateRequest()`** - Handles input validation
+
+### 3. **Type Safety**
+- Added proper TypeScript interfaces (`QueryRequest`, `EmbeddingRow`)
+- Replaced `any` types with proper type annotations
+- Added type assertions where needed
+
+### 4. **Separation of Concerns**
+- Each function has a single responsibility
+- Business logic is separated from HTTP handling
+- Easy to test individual components
+- Easy to reuse functions in other contexts
+
+### 5. **Benefits of This Structure**
+- **Testable**: Each function can be unit tested independently
+- **Reusable**: Functions can be imported and used in other files
+- **Maintainable**: Changes to one aspect don't affect others
+- **Extensible**: Easy to add new features like different embedding models or database operations
+
 ## Benefits of This Architecture
 
 ### 1. **Composability**
