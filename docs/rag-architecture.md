@@ -39,29 +39,40 @@ netlify/
 ├── lib/
 │   ├── clients/
 │   │   ├── openai.ts              # OpenAI client initialization
-│   │   ├── database.ts            # Neon database client
+│   │   ├── database.ts            # Neon database client + Drizzle
 │   │   └── index.ts               # Export all clients
 │   ├── services/
 │   │   ├── embedding.ts           # generateEmbedding, findSimilarEmbeddings
 │   │   ├── chat.ts                # generateAnswer, buildContextPrompt
 │   │   ├── query.ts               # processQuery orchestration
+│   │   ├── ingestion.ts           # saveEmbedding, processFile, ingestFiles
 │   │   └── index.ts               # Export all services
 │   ├── types/
 │   │   ├── query.ts               # QueryRequest, EmbeddingRow interfaces
 │   │   ├── embedding.ts           # Embedding-related types
+│   │   ├── ingestion.ts           # FileData, EmbeddingData, ProcessingResult
 │   │   └── index.ts               # Export all types
 │   ├── utils/
 │   │   ├── validation.ts          # validateRequest, other validators
 │   │   ├── response.ts            # Response helpers
+│   │   ├── file-system.ts         # walkDirectory, readFileData
+│   │   ├── rate-limiting.ts       # rateLimitDelay, createRateLimiter
 │   │   └── index.ts               # Export all utils
 │   └── config/
 │       └── environment.ts         # Environment variable handling
-└── shared/
-    ├── middleware/
-    │   ├── cors.ts                # CORS middleware
-    │   └── auth.ts                # Authentication middleware
-    └── constants/
-        └── models.ts              # AI model constants
+├── shared/
+│   ├── middleware/
+│   │   ├── cors.ts                # CORS middleware
+│   │   └── auth.ts                # Authentication middleware
+│   └── constants/
+│       └── models.ts              # AI model constants
+├── bin/
+│   ├── ingest.ts                  # CLI ingestion script
+│   └── migrate.ts                 # Database migration script
+└── db/
+    ├── index.ts                   # Database connection and setup
+    ├── schema.ts                  # Database schema definitions
+    └── migrations/                # Database migration files
 ```
 
 ## Client Initialization Pattern
@@ -92,6 +103,7 @@ export const getOpenAIClient = (): OpenAI => {
 **Database Client (`netlify/lib/clients/database.ts`):**
 ```typescript
 import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 
 const DATABASE_URL = process.env.NETLIFY_DATABASE_URL;
 
@@ -101,6 +113,7 @@ if (!DATABASE_URL) {
 
 // Singleton pattern - initialize once
 let sqlClient: any = null;
+let db: any = null;
 
 export const getSQLClient = () => {
   if (!sqlClient) {
@@ -108,6 +121,103 @@ export const getSQLClient = () => {
   }
   return sqlClient;
 };
+
+export const getDrizzleClient = () => {
+  if (!db) {
+    const neonSql = getSQLClient();
+    db = drizzle(neonSql);
+  }
+  return db;
+};
+```
+
+## Utility Functions
+
+### File System Utilities (`netlify/lib/utils/file-system.ts`)
+```typescript
+import { readdir, readFile } from "fs/promises";
+import path from "path";
+import { FileData } from "../types";
+
+/**
+ * Recursively walk a directory, yielding file paths with specified extensions
+ */
+export async function* walkDirectory(
+  dir: string, 
+  extensions: string[] = [".md"]
+): AsyncGenerator<string> {
+  for (const dirent of await readdir(dir, { withFileTypes: true })) {
+    const full = path.join(dir, dirent.name);
+    if (dirent.isDirectory()) {
+      yield* walkDirectory(full, extensions);
+    } else if (dirent.isFile() && extensions.some(ext => full.endsWith(ext))) {
+      yield full;
+    }
+  }
+}
+
+/**
+ * Read and prepare file data
+ */
+export const readFileData = async (filePath: string, targetDir: string): Promise<FileData> => {
+  const relPath = path.relative(targetDir, filePath);
+  const content = await readFile(filePath, "utf8");
+  
+  return {
+    filePath,
+    relPath,
+    content
+  };
+};
+```
+
+### Rate Limiting Utilities (`netlify/lib/utils/rate-limiting.ts`)
+```typescript
+/**
+ * Add rate limiting between API calls
+ */
+export const rateLimitDelay = async (ms: number = 200): Promise<void> => {
+  await new Promise((r) => setTimeout(r, ms));
+};
+
+/**
+ * Create a rate limiter function
+ */
+export const createRateLimiter = (ms: number) => {
+  return () => rateLimitDelay(ms);
+};
+```
+
+## Type Definitions
+
+### Ingestion Types (`netlify/lib/types/ingestion.ts`)
+```typescript
+export interface FileData {
+  filePath: string;
+  relPath: string;
+  content: string;
+}
+
+export interface EmbeddingData {
+  content: string;
+  embedding: number[];
+  filePath: string;
+}
+
+export interface ProcessingResult {
+  id: number;
+  filePath: string;
+  relPath: string;
+  success: boolean;
+  error?: string;
+}
+
+export interface IngestionConfig {
+  targetDir: string;
+  fileExtensions: string[];
+  rateLimitMs: number;
+  batchSize?: number;
+}
 ```
 
 ## Service Layer Implementation
@@ -175,6 +285,163 @@ export const generateAnswer = async (query: string, contextText: string): Promis
 
   return chatRes.choices?.[0]?.message?.content ?? "";
 };
+```
+
+### Ingestion Service (`netlify/lib/services/ingestion.ts`)
+```typescript
+import { sql } from "drizzle-orm";
+import { getDrizzleClient } from "../clients";
+import { generateEmbedding } from "./embedding";
+import { walkDirectory, readFileData } from "../utils/file-system";
+import { rateLimitDelay } from "../utils/rate-limiting";
+import { embeddings } from "../../../db/schema";
+import { FileData, EmbeddingData, ProcessingResult, IngestionConfig } from "../types";
+
+/**
+ * Save embedding to database
+ */
+export const saveEmbedding = async (embeddingData: EmbeddingData): Promise<number> => {
+  const db = getDrizzleClient();
+  const vecString = `[${embeddingData.embedding.join(",")}]`;
+  
+  const [inserted] = await db
+    .insert(embeddings)
+    .values({
+      chunk_index: 0,
+      content: embeddingData.content,
+      embedding: sql`${vecString}::vector`,
+    })
+    .returning({ id: embeddings.id });
+    
+  return inserted.id;
+};
+
+/**
+ * Process a single file: read, generate embedding, and save
+ */
+export const processFile = async (filePath: string, targetDir: string): Promise<ProcessingResult> => {
+  try {
+    // Read file data
+    const fileData = await readFileData(filePath, targetDir);
+    
+    // Generate embedding
+    const embedding = await generateEmbedding(fileData.content);
+    
+    // Save to database
+    const embeddingData: EmbeddingData = {
+      content: fileData.content,
+      embedding,
+      filePath: fileData.filePath
+    };
+    
+    const id = await saveEmbedding(embeddingData);
+    
+    return {
+      id,
+      filePath: fileData.filePath,
+      relPath: fileData.relPath,
+      success: true
+    };
+  } catch (error) {
+    return {
+      id: -1,
+      filePath,
+      relPath: path.relative(targetDir, filePath),
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+};
+
+/**
+ * Process all files in a directory
+ */
+export const processDirectory = async (config: IngestionConfig): Promise<ProcessingResult[]> => {
+  const results: ProcessingResult[] = [];
+  
+  for await (const filePath of walkDirectory(config.targetDir, config.fileExtensions)) {
+    // Throttle to avoid hitting rate limits
+    await rateLimitDelay(config.rateLimitMs);
+    
+    const result = await processFile(filePath, config.targetDir);
+    results.push(result);
+    
+    if (result.success) {
+      console.log(`✓ Inserted ${result.relPath} with ID ${result.id}`);
+    } else {
+      console.error(`✗ Failed to process ${result.relPath}: ${result.error}`);
+    }
+  }
+  
+  return results;
+};
+
+/**
+ * Main orchestration function
+ */
+export const ingestFiles = async (config: IngestionConfig): Promise<ProcessingResult[]> => {
+  console.log(`Starting ingestion from directory: ${config.targetDir}`);
+  console.log(`File extensions: ${config.fileExtensions.join(", ")}`);
+  console.log(`Rate limit: ${config.rateLimitMs}ms`);
+  
+  try {
+    const results = await processDirectory(config);
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+    
+    console.log(`\nIngestion complete:`);
+    console.log(`- Successful: ${successful.length}`);
+    console.log(`- Failed: ${failed.length}`);
+    console.log(`- Total: ${results.length}`);
+    
+    return results;
+  } catch (error) {
+    console.error("Error during ingestion:", error);
+    throw error;
+  }
+};
+```
+
+## CLI Scripts
+
+### Ingestion CLI (`bin/ingest.ts`)
+```typescript
+#!/usr/bin/env tsx
+
+import { ingestFiles } from "../netlify/lib/services";
+import { IngestionConfig } from "../netlify/lib/types";
+
+// Environment validation
+const OPENAI_KEY = process.env.OPENAI_API_KEY;
+const DATABASE_URL = process.env.NETLIFY_DATABASE_URL;
+
+if (!OPENAI_KEY) {
+  console.error("Missing OPENAI_API_KEY in environment");
+  process.exit(1);
+}
+if (!DATABASE_URL) {
+  console.error("Missing DATABASE_URL in environment");
+  process.exit(1);
+}
+
+// Main execution
+async function main() {
+  const targetDir = process.argv[2] || "./data";
+  
+  const config: IngestionConfig = {
+    targetDir,
+    fileExtensions: [".md", ".txt"],
+    rateLimitMs: 200,
+    batchSize: 10
+  };
+  
+  await ingestFiles(config);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
 ```
 
 ## Complete RAG Flow
