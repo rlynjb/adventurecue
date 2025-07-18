@@ -3,6 +3,11 @@ export interface RAGQuery {
   top_k?: number;
 }
 
+export interface RAGIngest {
+  text: string;
+  source?: string; // Optional source file name
+}
+
 export interface RAGResponse {
   answer: string;
 }

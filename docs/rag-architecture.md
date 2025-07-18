@@ -9,23 +9,29 @@ This document outlines the Retrieval-Augmented Generation (RAG) architecture imp
 ## RAG Pipeline Components
 
 ### 1. Retrieval Phase
+
 The retrieval phase converts user queries into vector embeddings and searches for similar content in the database.
 
 **Components:**
+
 - `generateEmbedding()` - Converts user query to vector using OpenAI's embedding model
 - `findSimilarEmbeddings()` - Performs vector similarity search using PostgreSQL + pgvector
 
 ### 2. Augmentation Phase
+
 The augmentation phase prepares and formats retrieved documents to provide context for the generation model.
 
 **Components:**
+
 - `buildContextPrompt()` - Formats retrieved documents into structured context
 - Context preparation with relevance ranking
 
 ### 3. Generation Phase
+
 The generation phase uses the augmented context to produce AI-generated responses.
 
 **Components:**
+
 - `generateAnswer()` - Uses OpenAI's chat completion with context-aware prompting
 
 ## Directory Structure
@@ -80,6 +86,7 @@ netlify/
 ### Singleton Pattern for Shared Clients
 
 **OpenAI Client (`netlify/lib/clients/openai.ts`):**
+
 ```typescript
 import { OpenAI } from "openai";
 
@@ -101,6 +108,7 @@ export const getOpenAIClient = (): OpenAI => {
 ```
 
 **Database Client (`netlify/lib/clients/database.ts`):**
+
 ```typescript
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -134,6 +142,7 @@ export const getDrizzleClient = () => {
 ## Utility Functions
 
 ### File System Utilities (`netlify/lib/utils/file-system.ts`)
+
 ```typescript
 import { readdir, readFile } from "fs/promises";
 import path from "path";
@@ -143,14 +152,17 @@ import { FileData } from "../types";
  * Recursively walk a directory, yielding file paths with specified extensions
  */
 export async function* walkDirectory(
-  dir: string, 
+  dir: string,
   extensions: string[] = [".md"]
 ): AsyncGenerator<string> {
   for (const dirent of await readdir(dir, { withFileTypes: true })) {
     const full = path.join(dir, dirent.name);
     if (dirent.isDirectory()) {
       yield* walkDirectory(full, extensions);
-    } else if (dirent.isFile() && extensions.some(ext => full.endsWith(ext))) {
+    } else if (
+      dirent.isFile() &&
+      extensions.some((ext) => full.endsWith(ext))
+    ) {
       yield full;
     }
   }
@@ -159,19 +171,23 @@ export async function* walkDirectory(
 /**
  * Read and prepare file data
  */
-export const readFileData = async (filePath: string, targetDir: string): Promise<FileData> => {
+export const readFileData = async (
+  filePath: string,
+  targetDir: string
+): Promise<FileData> => {
   const relPath = path.relative(targetDir, filePath);
   const content = await readFile(filePath, "utf8");
-  
+
   return {
     filePath,
     relPath,
-    content
+    content,
   };
 };
 ```
 
 ### Rate Limiting Utilities (`netlify/lib/utils/rate-limiting.ts`)
+
 ```typescript
 /**
  * Add rate limiting between API calls
@@ -191,6 +207,7 @@ export const createRateLimiter = (ms: number) => {
 ## Type Definitions
 
 ### Ingestion Types (`netlify/lib/types/ingestion.ts`)
+
 ```typescript
 export interface FileData {
   filePath: string;
@@ -223,9 +240,10 @@ export interface IngestionConfig {
 ## Service Layer Implementation
 
 ### Embedding Service (`netlify/lib/services/embedding.ts`)
+
 ```typescript
-import { getOpenAIClient, getSQLClient } from '../clients';
-import { EmbeddingRow } from '../types';
+import { getOpenAIClient, getSQLClient } from "../clients";
+import { EmbeddingRow } from "../types";
 
 export const generateEmbedding = async (text: string): Promise<number[]> => {
   const openai = getOpenAIClient();
@@ -242,7 +260,7 @@ export const findSimilarEmbeddings = async (
 ): Promise<EmbeddingRow[]> => {
   const sql = getSQLClient();
   const vecString = `[${vector.join(",")}]`;
-  
+
   const rows = await sql`
     SELECT id, content,
            embedding <=> ${vecString}::vector AS distance
@@ -250,21 +268,25 @@ export const findSimilarEmbeddings = async (
     ORDER BY distance
     LIMIT ${limit}
   `;
-  
+
   return rows as EmbeddingRow[];
 };
 ```
 
 ### Chat Service (`netlify/lib/services/chat.ts`)
+
 ```typescript
-import { getOpenAIClient } from '../clients';
-import { EmbeddingRow } from '../types';
+import { getOpenAIClient } from "../clients";
+import { EmbeddingRow } from "../types";
 
 export const buildContextPrompt = (rows: EmbeddingRow[]): string => {
   return rows.map((row, i) => `Context ${i + 1}:\n${row.content}`).join("\n\n");
 };
 
-export const generateAnswer = async (query: string, contextText: string): Promise<string> => {
+export const generateAnswer = async (
+  query: string,
+  contextText: string
+): Promise<string> => {
   const openai = getOpenAIClient();
   const chatRes = await openai.chat.completions.create({
     model: "gpt-4.1",
@@ -288,6 +310,7 @@ export const generateAnswer = async (query: string, contextText: string): Promis
 ```
 
 ### Ingestion Service (`netlify/lib/services/ingestion.ts`)
+
 ```typescript
 import { sql } from "drizzle-orm";
 import { getDrizzleClient } from "../clients";
@@ -295,15 +318,22 @@ import { generateEmbedding } from "./embedding";
 import { walkDirectory, readFileData } from "../utils/file-system";
 import { rateLimitDelay } from "../utils/rate-limiting";
 import { embeddings } from "../../../db/schema";
-import { FileData, EmbeddingData, ProcessingResult, IngestionConfig } from "../types";
+import {
+  FileData,
+  EmbeddingData,
+  ProcessingResult,
+  IngestionConfig,
+} from "../types";
 
 /**
  * Save embedding to database
  */
-export const saveEmbedding = async (embeddingData: EmbeddingData): Promise<number> => {
+export const saveEmbedding = async (
+  embeddingData: EmbeddingData
+): Promise<number> => {
   const db = getDrizzleClient();
   const vecString = `[${embeddingData.embedding.join(",")}]`;
-  
+
   const [inserted] = await db
     .insert(embeddings)
     .values({
@@ -312,35 +342,38 @@ export const saveEmbedding = async (embeddingData: EmbeddingData): Promise<numbe
       embedding: sql`${vecString}::vector`,
     })
     .returning({ id: embeddings.id });
-    
+
   return inserted.id;
 };
 
 /**
  * Process a single file: read, generate embedding, and save
  */
-export const processFile = async (filePath: string, targetDir: string): Promise<ProcessingResult> => {
+export const processFile = async (
+  filePath: string,
+  targetDir: string
+): Promise<ProcessingResult> => {
   try {
     // Read file data
     const fileData = await readFileData(filePath, targetDir);
-    
+
     // Generate embedding
     const embedding = await generateEmbedding(fileData.content);
-    
+
     // Save to database
     const embeddingData: EmbeddingData = {
       content: fileData.content,
       embedding,
-      filePath: fileData.filePath
+      filePath: fileData.filePath,
     };
-    
+
     const id = await saveEmbedding(embeddingData);
-    
+
     return {
       id,
       filePath: fileData.filePath,
       relPath: fileData.relPath,
-      success: true
+      success: true,
     };
   } catch (error) {
     return {
@@ -348,7 +381,7 @@ export const processFile = async (filePath: string, targetDir: string): Promise<
       filePath,
       relPath: path.relative(targetDir, filePath),
       success: false,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 };
@@ -356,44 +389,51 @@ export const processFile = async (filePath: string, targetDir: string): Promise<
 /**
  * Process all files in a directory
  */
-export const processDirectory = async (config: IngestionConfig): Promise<ProcessingResult[]> => {
+export const processDirectory = async (
+  config: IngestionConfig
+): Promise<ProcessingResult[]> => {
   const results: ProcessingResult[] = [];
-  
-  for await (const filePath of walkDirectory(config.targetDir, config.fileExtensions)) {
+
+  for await (const filePath of walkDirectory(
+    config.targetDir,
+    config.fileExtensions
+  )) {
     // Throttle to avoid hitting rate limits
     await rateLimitDelay(config.rateLimitMs);
-    
+
     const result = await processFile(filePath, config.targetDir);
     results.push(result);
-    
+
     if (result.success) {
       console.log(`✓ Inserted ${result.relPath} with ID ${result.id}`);
     } else {
       console.error(`✗ Failed to process ${result.relPath}: ${result.error}`);
     }
   }
-  
+
   return results;
 };
 
 /**
  * Main orchestration function
  */
-export const ingestFiles = async (config: IngestionConfig): Promise<ProcessingResult[]> => {
+export const ingestFiles = async (
+  config: IngestionConfig
+): Promise<ProcessingResult[]> => {
   console.log(`Starting ingestion from directory: ${config.targetDir}`);
   console.log(`File extensions: ${config.fileExtensions.join(", ")}`);
   console.log(`Rate limit: ${config.rateLimitMs}ms`);
-  
+
   try {
     const results = await processDirectory(config);
-    const successful = results.filter(r => r.success);
-    const failed = results.filter(r => !r.success);
-    
+    const successful = results.filter((r) => r.success);
+    const failed = results.filter((r) => !r.success);
+
     console.log(`\nIngestion complete:`);
     console.log(`- Successful: ${successful.length}`);
     console.log(`- Failed: ${failed.length}`);
     console.log(`- Total: ${results.length}`);
-    
+
     return results;
   } catch (error) {
     console.error("Error during ingestion:", error);
@@ -405,6 +445,7 @@ export const ingestFiles = async (config: IngestionConfig): Promise<ProcessingRe
 ## CLI Scripts
 
 ### Ingestion CLI (`bin/ingest.ts`)
+
 ```typescript
 #!/usr/bin/env tsx
 
@@ -427,14 +468,14 @@ if (!DATABASE_URL) {
 // Main execution
 async function main() {
   const targetDir = process.argv[2] || "./data";
-  
+
   const config: IngestionConfig = {
     targetDir,
     fileExtensions: [".md", ".txt"],
     rateLimitMs: 200,
-    batchSize: 10
+    batchSize: 10,
   };
-  
+
   await ingestFiles(config);
 }
 
@@ -450,48 +491,158 @@ main().catch((err) => {
 // Current implementation in processQuery()
 const processQuery = async (queryData: QueryRequest): Promise<string> => {
   const { query, top_k = 5 } = queryData;
-  
+
   // 1. RETRIEVAL: Convert query to embedding
   const vector = await generateEmbedding(query);
-  
+
   // 2. RETRIEVAL: Find similar documents
   const rows = await findSimilarEmbeddings(vector, top_k);
-  
+
   // 3. AUGMENTATION: Build context from retrieved docs
   const contextText = buildContextPrompt(rows);
-  
+
   // 4. GENERATION: Generate answer with context
   const answer = await generateAnswer(query, contextText);
-  
+
   return answer;
 };
 ```
 
+## Query Request Flow Diagram
+
+The following diagram shows the complete flow from frontend request to backend response through each composable function:
+
+```mermaid
+graph TD
+    A[Frontend - page.tsx] --> B[POST /.netlify/functions/query]
+    B --> C[handler(req: Request)]
+
+    C --> D{req.method === 'POST'?}
+    D -->|No| E[Return 405 Method Not Allowed]
+    D -->|Yes| F[Parse req.json()]
+
+    F --> G{JSON valid?}
+    G -->|No| H[Return 400 Invalid JSON]
+    G -->|Yes| I[validateRequest(body)]
+
+    I --> J{validation.isValid?}
+    J -->|No| K[Return 400 + validation.error]
+    J -->|Yes| L[processQuery(validation.data)]
+
+    L --> M[generateEmbedding(query)]
+    M --> N[OpenAI API - text-embedding-ada-002]
+    N --> O[Return vector embeddings]
+
+    O --> P[findSimilarEmbeddings(vector, top_k)]
+    P --> Q[Neon Database - pgvector search]
+    Q --> R[Return similar document chunks]
+
+    R --> S[buildContextPrompt(rows)]
+    S --> T[Format context from chunks]
+
+    T --> U[generateAnswer(query, contextText)]
+    U --> V[OpenAI API - gpt-4.1 chat completion]
+    V --> W[Return AI generated answer]
+
+    W --> X[Return Response JSON]
+    X --> Y[Frontend receives answer]
+
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#fff3e0
+    style L fill:#e8f5e8
+    style M fill:#fff9c4
+    style P fill:#fff9c4
+    style S fill:#fff9c4
+    style U fill:#fff9c4
+    style X fill:#e8f5e8
+    style Y fill:#e1f5fe
+```
+
+### Query Flow Description:
+
+#### **1. Frontend Layer**
+
+```typescript
+// page.tsx
+queryRAG({ query: "user question" })
+  ↓
+fetch("/.netlify/functions/query", {
+  method: "POST",
+  body: JSON.stringify({ query })
+})
+```
+
+#### **2. Netlify Function Handler**
+
+```typescript
+// netlify/functions/query.ts
+handler(req: Request) {
+  // 1. Method validation
+  // 2. JSON parsing
+  // 3. Request validation
+  // 4. Process query
+  // 5. Return response
+}
+```
+
+#### **3. RAG Pipeline (Composable Functions)**
+
+```typescript
+// services/query.ts
+processQuery(queryData) {
+  // 1. generateEmbedding(query)     → OpenAI Embeddings API
+  // 2. findSimilarEmbeddings(vector) → Neon Database Query
+  // 3. buildContextPrompt(rows)      → Format context
+  // 4. generateAnswer(query, context) → OpenAI Chat API
+}
+```
+
+#### **4. External Services**
+
+- **OpenAI Embeddings**: Convert text to vectors using `text-embedding-ada-002`
+- **Neon Database**: Vector similarity search with pgvector extension
+- **OpenAI Chat**: Generate contextual responses using `gpt-4.1`
+
+#### **5. Error Handling Points**
+
+- Method validation (405 Method Not Allowed)
+- JSON parsing (400 Invalid JSON)
+- Request validation (400 + validation error)
+- Processing errors (500 Internal Server Error)
+
+This flow demonstrates how the composable architecture creates clean separation between HTTP handling, business logic, and external service calls, making each component independently testable and maintainable.
+
 ## Key Improvements
 
-### 1. **Single Initialization** 
+### 1. **Single Initialization**
+
 - The `sql` and `openai` clients are initialized once at the module level and reused by all functions
 
 ### 2. **Composable Functions**
+
 - **`generateEmbedding()`** - Handles OpenAI embedding generation
-- **`findSimilarEmbeddings()`** - Handles database queries for similar vectors  
+- **`findSimilarEmbeddings()`** - Handles database queries for similar vectors
 - **`buildContextPrompt()`** - Formats context text from database results
 - **`generateAnswer()`** - Handles OpenAI chat completion
 - **`processQuery()`** - Orchestrates the entire query pipeline
 - **`validateRequest()`** - Handles input validation
 
 ### 3. **Type Safety**
+
 - Added proper TypeScript interfaces (`QueryRequest`, `EmbeddingRow`)
 - Replaced `any` types with proper type annotations
 - Added type assertions where needed
 
 ### 4. **Separation of Concerns**
+
 - Each function has a single responsibility
 - Business logic is separated from HTTP handling
 - Easy to test individual components
 - Easy to reuse functions in other contexts
 
 ### 5. **Benefits of This Structure**
+
 - **Testable**: Each function can be unit tested independently
 - **Reusable**: Functions can be imported and used in other files
 - **Maintainable**: Changes to one aspect don't affect others
@@ -500,21 +651,25 @@ const processQuery = async (queryData: QueryRequest): Promise<string> => {
 ## Benefits of This Architecture
 
 ### 1. **Composability**
+
 - Each function has a single responsibility
 - Easy to swap components (different embedding models, LLMs, etc.)
 - Services can be reused across different endpoints
 
 ### 2. **Testability**
+
 - Each service can be unit tested independently
 - Mock clients for testing without external dependencies
 - Clear separation of concerns
 
 ### 3. **Scalability**
+
 - Singleton pattern ensures efficient resource usage
 - Easy to add new RAG components (reranking, preprocessing, etc.)
 - Can scale individual services independently
 
 ### 4. **Maintainability**
+
 - Clear directory structure maps to RAG concepts
 - Type safety with TypeScript interfaces
 - Centralized client management
@@ -522,6 +677,7 @@ const processQuery = async (queryData: QueryRequest): Promise<string> => {
 ## Future Enhancements
 
 ### Additional RAG Components to Consider:
+
 ```
 services/
 ├── preprocessing.ts    # Text chunking, cleaning
@@ -532,6 +688,7 @@ services/
 ```
 
 ### Advanced Features:
+
 - **Hybrid Search**: Combine keyword and semantic search
 - **Re-ranking**: Improve relevance of retrieved documents
 - **Caching**: Cache embeddings and responses
