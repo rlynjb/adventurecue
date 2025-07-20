@@ -1,6 +1,14 @@
-import { processQuery } from "../services/query";
-import { validateRequest, type ValidateRequest } from "../utils/validation";
+import { processText } from "../services/ingestion";
 
+/**
+ * @NOTE
+ * copy how query.ts is structured
+ * - method validation
+ * - JSON parsing
+ * - request validation
+ * - process ingestion
+ * - return response
+ */
 const handler = async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
@@ -14,16 +22,13 @@ const handler = async (req: Request) => {
     return new Response("Invalid JSON payload", { status: 400 });
   }
 
-  // Validate request
-  const validation: ValidateRequest = validateRequest(body);
-  if (!validation.isValid) {
-    return new Response(validation.error, { status: 400 });
+  if (typeof body.text !== "string") {
+    return new Response("Invalid request body", { status: 400 });
   }
-
   try {
-    const answer = await processQuery(validation.data!);
+    const result = await processText(body.text);
 
-    return new Response(JSON.stringify({ answer }), {
+    return new Response(JSON.stringify({ result }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err: unknown) {

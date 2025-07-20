@@ -1,25 +1,44 @@
-import { RAGResponse, RAGQuery } from "@/lib/types";
+import { RAGIngest, RAGQuery, RAGResponse } from "@/lib/types";
 
 const endpoint = {
   query: "/.netlify/functions/query",
+  ingest: "/.netlify/functions/ingest",
 };
 
 export const queryRAG = async (queryObj: RAGQuery): Promise<RAGResponse> => {
   try {
-    const response = await fetch(endpoint.query, {
+    const res = await fetch(endpoint.query, {
       method: "POST",
       body: JSON.stringify(queryObj),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    const data = await response.json();
+    const data = await res.json();
     return data;
-
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error("Error fetching data:", error);
+    throw error;
+  }
+};
+
+export const ingestText = async (ingestObj: RAGIngest) => {
+  try {
+    const res = await fetch(endpoint.ingest, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: ingestObj.text,
+        source: ingestObj.source || "pasted-text",
+      }),
+    });
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error ingesting text:", error);
     throw error;
   }
 };
