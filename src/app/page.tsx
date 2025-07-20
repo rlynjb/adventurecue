@@ -13,7 +13,7 @@ export default function Home() {
           <Query />
         </div>
 
-        <div className="ingest-mode">
+        <div className="ingest-mode invisible">
           <Ingest />
         </div>
       </main>

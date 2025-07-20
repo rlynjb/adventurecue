@@ -32,6 +32,15 @@ export const Query = () => {
 
   return (
     <>
+      <div className="mt-4 mb-6">
+        {error && <p className=" text-red-500">Error: {error}</p>}
+        {respondData && (
+          <p className="mt-6 w-80 sm:w-[400px] md:w-[500px] lg:w-[600px] xl:w-[700px]">
+            {respondData}
+          </p>
+        )}
+      </div>
+
       <input
         type="text"
         placeholder="Type your query here..."
@@ -47,12 +56,6 @@ export const Query = () => {
           {loading ? "Loading..." : "Ask"}
         </button>
       </div>
-      {error && <p className="mt-4 text-red-500">Error: {error}</p>}
-      {respondData && (
-        <p className="mt-6 w-80 sm:w-[400px] md:w-[500px] lg:w-[600px] xl:w-[700px]">
-          {respondData}
-        </p>
-      )}
     </>
   );
 };
