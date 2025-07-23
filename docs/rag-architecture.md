@@ -155,7 +155,7 @@ graph TD
     A[Frontend - page.tsx] --> B[POST /.netlify/functions/query]
     B --> C[handler(req: Request)]
 
-    C --> D{req.method === 'POST'?}
+    C --> D{req.method === "POST"?}
     D -->|No| E[Return 405 Method Not Allowed]
     D -->|Yes| F[Parse req.json()]
 
@@ -432,7 +432,7 @@ graph TD
     B --> C[fetch /.netlify/functions/ingest]
 
     C --> D[Netlify Function Handler]
-    D --> E{req.method === 'POST'?}
+    D --> E{req.method === "POST"?}
     E -->|No| F[Return 405 Method Not Allowed]
     E -->|Yes| G[Parse req.json()]
 
