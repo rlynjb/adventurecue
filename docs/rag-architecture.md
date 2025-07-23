@@ -153,32 +153,32 @@ The following diagram shows the complete flow from frontend request to backend r
 ```mermaid
 graph TD
     A[Frontend - page.tsx] --> B[POST /.netlify/functions/query]
-    B --> C[handler(req: Request)]
+    B --> C[handler function]
 
-    C --> D{req.method === "POST"?}
+    C --> D{req.method === POST?}
     D -->|No| E[Return 405 Method Not Allowed]
-    D -->|Yes| F[Parse req.json()]
+    D -->|Yes| F[Parse req.json]
 
     F --> G{JSON valid?}
     G -->|No| H[Return 400 Invalid JSON]
-    G -->|Yes| I[validateRequest(body)]
+    G -->|Yes| I[validateRequest body]
 
     I --> J{validation.isValid?}
     J -->|No| K[Return 400 + validation.error]
-    J -->|Yes| L[processQuery(validation.data)]
+    J -->|Yes| L[processQuery validation.data]
 
-    L --> M[generateEmbedding(query)]
+    L --> M[generateEmbedding query]
     M --> N[OpenAI API - text-embedding-ada-002]
     N --> O[Return vector embeddings]
 
-    O --> P[findSimilarEmbeddings(vector, top_k)]
+    O --> P[findSimilarEmbeddings vector, top_k]
     P --> Q[Neon Database - pgvector search]
     Q --> R[Return similar document chunks]
 
-    R --> S[buildContextPrompt(rows)]
+    R --> S[buildContextPrompt rows]
     S --> T[Format context from chunks]
 
-    T --> U[generateAnswer(query, contextText)]
+    T --> U[generateAnswer query, contextText]
     U --> V[OpenAI API - gpt-4.1 chat completion]
     V --> W[Return AI generated answer]
 
