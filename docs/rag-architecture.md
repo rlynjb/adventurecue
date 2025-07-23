@@ -428,36 +428,36 @@ The system also supports text ingestion through a web UI via the `/netlify/funct
 
 ```mermaid
 graph TD
-    A[Frontend Form Input] --> B[submitText() function]
+    A[Frontend Form Input] --> B[submitText function]
     B --> C[fetch netlify functions ingest]
 
     C --> D[Netlify Function Handler]
-    D --> E{req.method === "POST"?}
+    D --> E{req method is POST}
     E -->|No| F[Return 405 Method Not Allowed]
     E -->|Yes| G[Parse req json]
 
-    G --> H{JSON valid?}
+    G --> H{JSON valid}
     H -->|No| I[Return 400 Invalid JSON]
-    H -->|Yes| J[validateIngestRequest(body)]
+    H -->|Yes| J[validateIngestRequest body]
 
-    J --> K{validation.isValid?}
+    J --> K{validation isValid}
     K -->|No| L[Return 400 plus validation error]
     K -->|Yes| M[processText validation data]
 
-    M --> N[TODO: Text Chunking Logic]
-    N --> O[generateEmbedding(content)]
-    O --> P[OpenAI API - text-embedding-ada-002]
+    M --> N[TODO Text Chunking Logic]
+    N --> O[generateEmbedding content]
+    O --> P[OpenAI API text-embedding-ada-002]
     P --> Q[Return vector embeddings]
 
     Q --> R[Create EmbeddingData Object]
-    R --> S[saveEmbedding(embeddingData)]
-    S --> T[getDrizzleClient()]
+    R --> S[saveEmbedding embeddingData]
+    S --> T[getDrizzleClient]
     T --> U[Insert into embeddings table]
     U --> V[Return database ID]
 
-    V --> W{Processing successful?}
-    W -->|Yes| X[Return 200 + success response]
-    W -->|No| Y[Return 500 + error message]
+    V --> W{Processing successful}
+    W -->|Yes| X[Return 200 plus success response]
+    W -->|No| Y[Return 500 plus error message]
 
     X --> Z[Frontend displays success]
     Y --> AA[Frontend displays error]
