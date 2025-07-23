@@ -152,20 +152,20 @@ The following diagram shows the complete flow from frontend request to backend r
 
 ```mermaid
 graph TD
-    A[Frontend - page.tsx] --> B[POST /.netlify/functions/query]
+    A[Frontend page tsx] --> B[POST netlify functions query]
     B --> C[handler function]
 
     C --> D{req.method === POST?}
     D -->|No| E[Return 405 Method Not Allowed]
-    D -->|Yes| F[Parse req.json]
+    D -->|Yes| F[Parse req json]
 
     F --> G{JSON valid?}
     G -->|No| H[Return 400 Invalid JSON]
     G -->|Yes| I[validateRequest body]
 
     I --> J{validation.isValid?}
-    J -->|No| K[Return 400 + validation.error]
-    J -->|Yes| L[processQuery validation.data]
+    J -->|No| K[Return 400 plus validation error]
+    J -->|Yes| L[processQuery validation data]
 
     L --> M[generateEmbedding query]
     M --> N[OpenAI API - text-embedding-ada-002]
@@ -179,7 +179,7 @@ graph TD
     S --> T[Format context from chunks]
 
     T --> U[generateAnswer query, contextText]
-    U --> V[OpenAI API - gpt-4.1 chat completion]
+    U --> V[OpenAI API gpt-4 chat completion]
     V --> W[Return AI generated answer]
 
     W --> X[Return Response JSON]
@@ -257,55 +257,55 @@ The following diagram shows the complete ingestion flow from CLI execution throu
 
 ```mermaid
 graph TD
-    A[CLI Command: tsx bin/ingest.ts ./data] --> B[bin/ingest.ts Entry Point]
+    A[CLI Command tsx bin ingest ts data] --> B[bin ingest ts Entry Point]
     B --> C[Environment Validation]
 
-    C --> D{OPENAI_KEY exists?}
+    C --> D{OPENAI_KEY exists}
     D -->|No| E[Exit with error]
-    D -->|Yes| F{DATABASE_URL exists?}
+    D -->|Yes| F{DATABASE_URL exists}
     F -->|No| E
     F -->|Yes| G[Create IngestionConfig]
 
-    G --> H[main() function]
-    H --> I[ingestFiles(config)]
+    G --> H[main function]
+    H --> I[ingestFiles config]
 
     I --> J[Log Configuration Info]
-    J --> K[processDirectory(config)]
+    J --> K[processDirectory config]
 
     K --> L[walkDirectory Generator]
     L --> M{For each file found}
 
-    M --> N[rateLimitDelay(200ms)]
-    N --> O[processFile(filePath, targetDir)]
+    M --> N[rateLimitDelay 200ms]
+    N --> O[processFile filePath targetDir]
 
-    O --> P[readFileData(filePath, targetDir)]
-    P --> Q[Read file content + metadata]
+    O --> P[readFileData filePath targetDir]
+    P --> Q[Read file content metadata]
 
-    Q --> R[TODO: Text Chunking Logic]
-    R --> S[generateEmbedding(content)]
-    S --> T[getOpenAIClient()]
-    T --> U[OpenAI API Call - text-embedding-ada-002]
+    Q --> R[TODO Text Chunking Logic]
+    R --> S[generateEmbedding content]
+    S --> T[getOpenAIClient]
+    T --> U[OpenAI API Call text-embedding-ada-002]
     U --> V[Return vector embeddings]
 
     V --> W[Create EmbeddingData Object]
-    W --> X[saveEmbedding(embeddingData)]
-    X --> Y[getDrizzleClient()]
+    W --> X[saveEmbedding embeddingData]
+    X --> Y[getDrizzleClient]
     Y --> Z[Format vector string]
     Z --> AA[Insert into embeddings table]
     AA --> BB[Return database ID]
 
-    BB --> CC{Processing successful?}
+    BB --> CC{Processing successful}
     CC -->|Yes| DD[Create success ProcessingResult]
     CC -->|No| EE[Create error ProcessingResult]
 
-    DD --> FF[Log ✓ Success with ID]
-    EE --> GG[Log ✗ Error message]
+    DD --> FF[Log Success with ID]
+    EE --> GG[Log Error message]
 
     FF --> HH[Add result to array]
     GG --> HH
-    HH --> II{More files to process?}
+    HH --> II{More files to process}
     II -->|Yes| M
-    II -->|No| JJ[Return ProcessingResult[]]
+    II -->|No| JJ[Return ProcessingResult array]
 
     JJ --> KK[Filter successful results]
     KK --> LL[Filter failed results]
@@ -429,20 +429,20 @@ The system also supports text ingestion through a web UI via the `/netlify/funct
 ```mermaid
 graph TD
     A[Frontend Form Input] --> B[submitText() function]
-    B --> C[fetch /.netlify/functions/ingest]
+    B --> C[fetch netlify functions ingest]
 
     C --> D[Netlify Function Handler]
     D --> E{req.method === "POST"?}
     E -->|No| F[Return 405 Method Not Allowed]
-    E -->|Yes| G[Parse req.json()]
+    E -->|Yes| G[Parse req json]
 
     G --> H{JSON valid?}
     H -->|No| I[Return 400 Invalid JSON]
     H -->|Yes| J[validateIngestRequest(body)]
 
     J --> K{validation.isValid?}
-    K -->|No| L[Return 400 + validation.error]
-    K -->|Yes| M[processText(validation.data)]
+    K -->|No| L[Return 400 plus validation error]
+    K -->|Yes| M[processText validation data]
 
     M --> N[TODO: Text Chunking Logic]
     N --> O[generateEmbedding(content)]
