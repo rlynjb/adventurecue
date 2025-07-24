@@ -16,6 +16,7 @@ export const Query = () => {
 
     try {
       const result: RAGResponse = await queryRAG({ query: inputData });
+      console.log("RAG response:", result);
       setRespondData(result.answer);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -30,32 +31,42 @@ export const Query = () => {
     }
   };
 
+  /**
+   * @note
+   * make this like a chat app UI layout.
+   * look into formatting teh response to Hybrid Output.
+   *
+   * also show query status. base on the tools used.
+   * e.g. if web search is used, show a message like:
+   * "Searching web... Hang tight!"
+   * or if RAG is used, show:
+   * "Querying for places... Please wait."
+   * or if both are used, show:
+   * "Fetching results... This may take a few seconds."
+   */
+
   return (
     <>
-      <div className="mt-4 mb-6">
+      <main className="app-container__main">
+        {respondData && <p className="text-neutral-400">{respondData}</p>}
         {error && <p className=" text-red-500">Error: {error}</p>}
-        {respondData && (
-          <p className="mt-6 w-80 sm:w-[400px] md:w-[500px] lg:w-[600px] xl:w-[700px]">
-            {respondData}
-          </p>
-        )}
-      </div>
+      </main>
 
-      <input
-        type="text"
-        placeholder="Type your query here..."
-        className="mb-6"
-        value={inputData}
-        onChange={(e) => setInputData(e.target.value)}
-        onKeyUp={handleKeyPress}
-        disabled={loading}
-      />
+      <footer className="app-container__footer">
+        <input
+          type="text"
+          placeholder="Ask a travel question..."
+          value={inputData}
+          className="w-[36em]"
+          onChange={(e) => setInputData(e.target.value)}
+          onKeyUp={handleKeyPress}
+          disabled={loading}
+        />
 
-      <div className="flex gap-4 items-center flex-col sm:flex-row">
         <button onClick={handleQueryRAG} disabled={loading}>
           {loading ? "Loading..." : "Ask"}
         </button>
-      </div>
+      </footer>
     </>
   );
 };

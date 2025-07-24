@@ -28,9 +28,29 @@ body {
 .input-field,
 textarea,
 input[type="text"] {
-  @apply border border-solid border-black/[.08] dark:border-white/[.145] rounded-md p-2 w-80 sm:w-[400px] md:w-[500px] lg:w-[600px] xl:w-[700px] focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition-colors;
+  @apply border border-solid border-black/[.08] dark:border-white/[.145];
+  @apply rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300 transition-colors;
 }
 
 button {
-  @apply rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px];
+  @apply rounded-md border border-solid border-black/[.08] dark:border-white/[.145] transition-colors;
+  @apply flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent;
+  @apply font-medium text-sm sm:text-base h-10 px-4;
+}
+
+.app-container {
+  @apply flex flex-col max-w-2xl mx-auto min-h-screen relative;
+  @apply w-[40em];
+}
+
+.app-container__header {
+  @apply flex justify-between items-center py-2 border-b border-neutral-700 fixed top-0 w-[40em] m-auto bg-black;
+}
+
+.app-container__main {
+  @apply flex flex-col gap-4 py-4 flex-1 overflow-y-auto my-[4em];
+}
+
+.app-container__footer {
+  @apply flex gap-2 mt-4 border-t border-neutral-700 py-4 bg-black fixed bottom-0 left-0 right-0 m-auto w-[40em];
 }

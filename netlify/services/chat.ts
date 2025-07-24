@@ -28,14 +28,35 @@ export const buildContextPrompt = (rows: EmbeddingRow[]): string => {
 export const generateAnswer = async (
   query: string,
   contextText: string
-): Promise<string> => {
+): Promise<any> => {
   /**
    * Step 1: Call model with user query, context from vector DB, and tools.
    */
   const input: any[] = [
     {
       role: "system",
-      content: `You are a helpful travel assistant. Use available context and optionally web search to provide the best recommendations.`,
+      content: `
+        You're a helpful travel assistant. When recommending places, do two things:
+
+        1. Speak naturally as if chatting with a traveler.
+        2. Include a JSON object in a code block with this shape:
+
+        \`\`\`json
+        {
+          "places": [
+            {
+              "name": "string",
+              "description": "string",
+              "type": "e.g. Cultural, Nature, Food",
+              "location": "approximate area in the city"
+            }
+          ]
+        }
+        \`\`\`
+
+        Respond with the conversational tone first, and then the JSON block.
+        End with a friendly offer to help further.
+      `,
     },
     { role: "user", content: query },
     { role: "assistant", content: contextText },
