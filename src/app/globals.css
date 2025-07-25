@@ -48,7 +48,7 @@ button {
 }
 
 .app-container__main {
-  @apply flex flex-col gap-4 py-4 flex-1 overflow-y-auto my-[4em];
+  @apply grid content-end gap-4 py-4 overflow-y-auto min-h-[70vh] mt-[4em];
 }
 
 .app-container__footer {
@@ -56,7 +56,7 @@ button {
 }
 
 .chat-message {
-  @apply mb-6 grid text-neutral-400;
+  @apply mt-6 grid text-neutral-400;
 }
 
 .chat-user {
@@ -68,7 +68,7 @@ button {
 }
 .chat-system__intro,
 .chat-system__outro {
-  @apply text-neutral-400 mb-6;
+  @apply text-neutral-400;
 }
 
 .chat-system__places {
