@@ -4,20 +4,38 @@ import { queryRAG } from "@/lib/api";
 import { RAGResponse } from "@/lib/types/rag";
 import { useState } from "react";
 
+export interface Result {
+  intro: string;
+  places?: {
+    name: string;
+    description: string;
+    type: string;
+    location: string;
+  }[];
+  outro?: string;
+}
+
 export const Query = () => {
   const [inputData, setInputData] = useState<string>("");
-  const [respondData, setRespondData] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<(string | Result)[]>([
+    { intro: "Hi! What are you in the mood for?" },
+  ]);
 
   const handleQueryRAG = async () => {
     setLoading(true);
     setError(null);
+    setMessages((prev) => [...prev, inputData]);
+    setInputData("");
+
+    // insert loading message in messages array
+    // come up with a way to organize different types of messages
 
     try {
       const result: RAGResponse = await queryRAG({ query: inputData });
-      console.log("RAG response:", result);
-      setRespondData(result.answer);
+      console.log("RAG response:", JSON.parse(result.answer));
+      setMessages((prev) => [...prev, JSON.parse(result.answer)]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -48,7 +66,35 @@ export const Query = () => {
   return (
     <>
       <main className="app-container__main">
-        {respondData && <p className="text-neutral-400">{respondData}</p>}
+        <div className="chat-container">
+          {messages.map((msg, index) => (
+            <div key={index} className="chat-message">
+              {typeof msg === "string" ? (
+                <p className="chat-user">{msg}</p>
+              ) : (
+                <div className="chat-system">
+                  <p className="chat-system__intro">{msg.intro}</p>
+                  <ul className="chat-system__places">
+                    {msg.places
+                      ? msg.places.map((place, idx) => (
+                          <li key={idx}>
+                            <div>
+                              <b>✅ {place.name}</b>
+                              <p className="text-sm">📍 {place.location}</p>
+                            </div>
+                            <p>{place.description}</p>
+                          </li>
+                        ))
+                      : []}
+                  </ul>
+                  <p className="chat-system__outro text-neutral-400">
+                    {msg.outro}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
         {error && <p className=" text-red-500">Error: {error}</p>}
       </main>
 

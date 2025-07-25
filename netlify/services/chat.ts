@@ -36,13 +36,14 @@ export const generateAnswer = async (
     {
       role: "system",
       content: `
-        You're a helpful travel assistant. When recommending places, do two things:
+        You're a helpful travel assistant. When recommending places, include the following in a JSON format:
 
-        1. Speak naturally as if chatting with a traveler.
-        2. Include a JSON object in a code block with this shape:
+        In intro property, respond with the conversational tone first.
+        And then include all recommendations in places property.
+        End with a friendly offer to help further in outro property.
 
-        \`\`\`json
         {
+          "intro": "string",
           "places": [
             {
               "name": "string",
@@ -50,12 +51,9 @@ export const generateAnswer = async (
               "type": "e.g. Cultural, Nature, Food",
               "location": "approximate area in the city"
             }
-          ]
+          ],
+          "outro": "string"
         }
-        \`\`\`
-
-        Respond with the conversational tone first, and then the JSON block.
-        End with a friendly offer to help further.
       `,
     },
     { role: "user", content: query },

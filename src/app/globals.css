@@ -54,3 +54,29 @@ button {
 .app-container__footer {
   @apply flex gap-2 mt-4 border-t border-neutral-700 py-4 bg-black fixed bottom-0 left-0 right-0 m-auto w-[40em];
 }
+
+.chat-message {
+  @apply mb-6 grid text-neutral-400;
+}
+
+.chat-user {
+  @apply py-2 px-4 rounded-md bg-neutral-900 place-self-end;
+}
+
+.chat-system {
+  @apply text-left;
+}
+.chat-system__intro,
+.chat-system__outro {
+  @apply text-neutral-400 mb-6;
+}
+
+.chat-system__places {
+  @apply my-2;
+}
+.chat-system__places li {
+  @apply mb-4;
+}
+.chat-system__places li p {
+  @apply ml-5;
+}
