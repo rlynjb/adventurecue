@@ -6,6 +6,68 @@ import { EmbeddingRow } from "../types";
 const openai = getOpenAIClient();
 
 /**
+ * Makes an OpenAI API call with the given parameters
+ */
+const callOpenAI = async (
+  input: any[],
+  tools: any[],
+  store = false
+): Promise<any> => {
+  return await openai.responses.create({
+    model: "gpt-4.1",
+    input,
+    tools,
+    ...(store && { store: true }),
+  });
+};
+
+/**
+ * Executes different tool types using a simple switch statement
+ */
+const executeToolCall = async (
+  toolCall: any,
+  context: { query: string; contextText: string }
+): Promise<any> => {
+  console.log(`Executing tool: ${toolCall.type}`);
+
+  switch (toolCall.type) {
+    case "web_search_call":
+      console.log("Searching web.....", { query: context.query });
+      // Custom web search logic can go here
+      return toolCall;
+
+    case "custom_api_call":
+      console.log("Calling custom API.....", {
+        toolCall: toolCall.type,
+        query: context.query,
+      });
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return {
+        ...toolCall,
+        result: `Custom API result for: ${context.query}`,
+        timestamp: Date.now(),
+      };
+
+    case "database_lookup":
+      console.log("Looking up database.....", { query: context.query });
+      // Simulate database lookup
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return {
+        ...toolCall,
+        result: `Database result for: ${context.query}`,
+        found: true,
+      };
+
+    default:
+      console.log(
+        `Unknown tool type: ${toolCall.type}, using default behavior`
+      );
+      return toolCall;
+  }
+};
+
+/**
  * Formats context text from database results
  *
  * @desc Builds a context prompt from the provided embedding rows.
@@ -65,11 +127,7 @@ export const generateAnswer = async (
     { type: "web_search_preview_2025_03_11" },
   ];
 
-  const response = await openai.responses.create({
-    model: "gpt-4.1",
-    input,
-    tools,
-  });
+  const response = await callOpenAI(input, tools);
 
   /**
    * Step 2: Model decides to call function(s) – model returns the name and input arguments.
@@ -80,20 +138,16 @@ export const generateAnswer = async (
    * Step 3: Execute function code – parse the model's response and handle function calls.
    */
   const toolCall = response.output?.[0];
-  if (toolCall?.type === "web_search_call") {
-    console.log("Searching web.....");
+  if (toolCall?.type) {
+    // Use switch-based tool execution
+    const toolResult = await executeToolCall(toolCall, { query, contextText });
 
     /**
      * Step 4: Supply model with results – so it can incorporate them into its final response.
      */
-    input.push(toolCall);
+    input.push(toolResult);
 
-    const followUpResponse = await openai.responses.create({
-      model: "gpt-4.1",
-      input,
-      tools,
-      store: true,
-    });
+    const followUpResponse = await callOpenAI(input, tools, true);
 
     /**
      * Step 5: Model responds – incorporating the result in its output.
