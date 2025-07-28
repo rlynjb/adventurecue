@@ -42,6 +42,11 @@ export default function Home() {
        * - Add a "Tool Call" analytics to track usage and performance
        * - Implement a "Tool Call" versioning to manage changes over time
        */}
+
+      {/**
+       * Backlog feature:
+       * - add a button to clear chat history
+       */}
     </div>
   );
 }
