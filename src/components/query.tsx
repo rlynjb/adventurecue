@@ -1,7 +1,6 @@
 "use client";
 
-import { queryRAG } from "@/lib/api";
-import { RAGResponse } from "@/lib/types/rag";
+import { StreamEvent, StreamProcessor } from "@/lib/packages";
 import { useState } from "react";
 
 export interface Result {
@@ -29,13 +28,21 @@ export const Query = () => {
     setMessages((prev) => [...prev, inputData]);
     setInputData("");
 
-    // insert loading message in messages array
-    // come up with a way to organize different types of messages
-
     try {
-      const result: RAGResponse = await queryRAG({ query: inputData });
-      console.log("RAG response:", JSON.parse(result.answer));
-      setMessages((prev) => [...prev, JSON.parse(result.answer)]);
+      const processor = new StreamProcessor();
+      await processor.processQuery(inputData, (event: StreamEvent) => {
+        if (event.type === "status") {
+          console.log("Status update:", event);
+        }
+
+        if (event.type === "final") {
+          console.log("Final result:", event.result?.response);
+          setMessages((prev) => [
+            ...prev,
+            JSON.parse(event.result?.response || "{}"),
+          ]);
+        }
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

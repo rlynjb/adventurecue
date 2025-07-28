@@ -1,3 +1,5 @@
+import { endpoint } from "@/lib/api";
+
 /**
  * TRAINEE-FRIENDLY STREAMING EXAMPLE
  *
@@ -50,7 +52,7 @@ class StreamConnection {
     userQuery: string
   ): Promise<ReadableStreamDefaultReader<Uint8Array>> {
     // Step 1: Make the HTTP request
-    const response = await fetch("/api/query-with-status", {
+    const response = await fetch(endpoint.queryStream, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -480,6 +482,7 @@ export async function example4_NonStreaming(
 /**
  * Set up the chat form when the page loads
  */
+/*
 export function initializeChatForm(): void {
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("chat-form") as HTMLFormElement;
@@ -503,6 +506,7 @@ export function initializeChatForm(): void {
     }
   });
 }
+*/
 
 // Initialize when this module is imported
-initializeChatForm();
+//initializeChatForm();
