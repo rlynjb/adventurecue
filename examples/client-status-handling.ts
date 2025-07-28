@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Client-side examples for handling status updates from the chat system
  */
@@ -28,7 +29,7 @@ async function queryWithStatus(userQuery: string) {
     console.log("Tools Used:", result.toolsUsed);
 
     // Display status steps to user
-    result.steps.forEach((step, index) => {
+    result.steps.forEach((step: any, index: number) => {
       console.log(`Step ${step.step}: ${step.description} (${step.status})`);
       updateStatusUI(step, index);
     });
