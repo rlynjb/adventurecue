@@ -11,7 +11,6 @@ export {
   example2_CustomEventHandling,
   example3_WithErrorHandling,
   example4_NonStreaming,
-  initializeChatForm,
   queryWithStreaming,
   StreamProcessor,
 } from "./sse-streaming-client";
