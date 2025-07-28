@@ -144,6 +144,27 @@ curl -X POST http://localhost:8888/.netlify/functions/query \
   -d '{"query": "What is the meaning of life?"}'
 ```
 
+### Streaming Query Endpoint (New)
+
+```bash
+# Real-time streaming responses with status updates
+curl -X POST http://localhost:8888/.netlify/functions/query-with-status \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What are the best places to visit in Tokyo?",
+    "streaming": true
+  }' \
+  --no-buffer
+
+# Non-streaming version with complete status information
+curl -X POST http://localhost:8888/.netlify/functions/query-with-status \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What are the best places to visit in Tokyo?",
+    "streaming": false
+  }'
+```
+
 ### Ingestion Endpoint
 
 ```bash
@@ -157,15 +178,33 @@ curl -X POST http://localhost:8888/.netlify/functions/ingest \
 
 ```
 adventurecue/
-├── src/app/                    # Next.js app router
+├── src/
+│   ├── app/                    # Next.js app router
+│   └── lib/
+│       └── packages/           # Reusable UI packages
+│           ├── index.ts        # Package exports
+│           ├── sse-streaming-client.ts  # SSE streaming components
+│           ├── usage-examples.tsx       # React integration examples
+│           └── README.md       # UI packages documentation
 ├── netlify/
 │   ├── functions/              # Serverless function handlers
 │   │   ├── query.ts           # Query endpoint
+│   │   ├── query-with-status.ts # Streaming query with status updates
 │   │   └── ingest.ts          # Ingestion endpoint
-│   └── services/              # Composable business logic
-│       ├── query.ts           # Query orchestration
-│       ├── ingestion.ts       # Ingestion pipeline
-│       └── embedding.ts       # OpenAI integration
+│   ├── services/              # Composable business logic
+│   │   ├── query.ts           # Query orchestration
+│   │   ├── chat.ts            # Enhanced chat with status tracking
+│   │   ├── ingestion.ts       # Ingestion pipeline
+│   │   └── embedding.ts       # OpenAI integration
+│   └── types/                 # TypeScript interfaces
+│       └── chat.ts            # Chat and streaming types
+├── examples/
+│   ├── sse-streaming-client/  # SSE testing suite
+│   │   ├── streaming-test.html     # Visual streaming test
+│   │   ├── streaming-test-cli.js   # CLI streaming test
+│   │   └── README.md          # Testing documentation
+│   ├── client-status-handling.ts   # Client-side examples
+│   └── refactored-streaming-demo.html  # Demo interface
 ├── bin/
 │   └── ingest.ts              # CLI ingestion script
 ├── db/
@@ -206,6 +245,65 @@ const result = await ingestText({
   content: "Your text content",
   source: "api_integration",
   metadata: { category: "docs" },
+});
+```
+
+## Testing Streaming Functionality
+
+### SSE Streaming Test Suite
+
+The project includes comprehensive testing tools for the Server-Sent Events streaming functionality:
+
+#### Visual Testing (Recommended)
+
+```bash
+# Open the HTML test interface
+open examples/sse-streaming-client/streaming-test.html
+# Or visit: http://localhost:8888/examples/sse-streaming-client/streaming-test.html
+```
+
+**Features:**
+
+- ✅ Real-time event display with color coding
+- ✅ Quick test queries for different scenarios
+- ✅ Live statistics (events, timing, execution time)
+- ✅ Connection status indicators
+- ✅ Export logs for debugging
+
+#### CLI Testing
+
+```bash
+# Test with default query
+node examples/sse-streaming-client/streaming-test-cli.js
+
+# Test with custom query
+node examples/sse-streaming-client/streaming-test-cli.js "Tell me about Tokyo attractions"
+```
+
+**Features:**
+
+- ✅ Colored terminal output for easy reading
+- ✅ Detailed event parsing with timestamps
+- ✅ Test statistics and summary
+- ✅ Error detection and reporting
+
+#### UI Package Integration
+
+```typescript
+// Use the SSE streaming client in your React components
+import {
+  queryWithStreaming,
+  StreamEvent,
+  StreamProcessor,
+} from "@/lib/packages";
+
+// Basic usage
+await queryWithStreaming("What's the weather like?");
+
+// Advanced usage with custom event handling
+const processor = new StreamProcessor();
+await processor.processQuery(userQuery, (event: StreamEvent) => {
+  console.log("Received event:", event);
 });
 ```
 
@@ -273,7 +371,41 @@ This project follows a phased approach to building a comprehensive RAG system. T
 
 ### 🔄 Phase 2: Enhanced User Experience (In Progress)
 
-#### Chat History & Session Management
+#### Real-time Streaming & Status Tracking (✅ Complete)
+
+```typescript
+// Implemented streaming interfaces
+interface StreamEvent {
+  type: "status" | "final" | "error";
+  status?: {
+    step: number;
+    description: string;
+    status: "starting" | "in_progress" | "completed" | "error";
+    timestamp: number;
+  };
+  result?: {
+    response: string;
+    executionTimeMs: number;
+    toolsUsed: string[];
+    steps: Array<{
+      step: number;
+      description: string;
+      status: string;
+      timestamp: number;
+    }>;
+  };
+  error?: string;
+}
+```
+
+- ✅ **Server-Sent Events (SSE)**: Real-time streaming responses with status updates
+- ✅ **Status Tracking System**: Comprehensive progress monitoring for AI operations
+- ✅ **SSE Streaming Client Package**: Modular, trainee-friendly UI components
+- ✅ **Streaming Test Suite**: Comprehensive testing tools for SSE functionality
+- ✅ **EventSource Comparison**: Documentation of custom vs built-in approaches
+- ✅ **Production-Ready Architecture**: Clean separation of streaming components
+
+#### Chat History & Session Management (Planned)
 
 ```typescript
 // Planned implementation
@@ -299,7 +431,7 @@ interface ChatMessage {
 - 💾 **Context Continuity**: Maintain conversation flow and references
 - 🎯 **Follow-up Questions**: Context-aware responses using chat history
 
-#### Memory Management & Personalization
+#### Memory Management & Personalization (Planned)
 
 - 🧠 **Short-term Memory**: Recent conversation context (sliding window)
 - 📚 **Long-term Memory**: User preferences and interaction patterns
@@ -335,7 +467,7 @@ const mcpTools: MCPTool[] = [
 ```
 
 - 🔌 **MCP Server Integration**: Connect external tools and services
-- 🌐 **Web Search Tools**: Real-time information retrieval
+- ✅ **Web Search Tools**: Real-time information retrieval (✅ OpenAI web search implemented)
 - 💻 **Code Execution**: Sandboxed code analysis and execution
 - 📊 **Data Analysis Tools**: Statistical analysis and visualization
 - 🗂️ **File Management**: Advanced document processing and manipulation
@@ -762,15 +894,51 @@ const launchMilestones = {
 
 ### Implementation Timeline
 
-| Phase           | Duration     | Key Deliverables                                          |
-| --------------- | ------------ | --------------------------------------------------------- |
-| **Phase 2**     | 2-3 months   | Chat history, session management, basic memory            |
-| **Phase 3**     | 3-4 months   | MCP integration, OpenAI tooling, function calling         |
-| **Phase 4**     | 4-6 months   | Production features, monitoring, performance optimization |
-| **Phase 5**     | 6-8 months   | Multi-agent systems, knowledge graphs                     |
-| **Phase 6**     | 8-12 months  | Enterprise features, security, compliance                 |
-| **Phase 7**     | 12-18 months | SaaS platform, multi-tenancy, billing, global scaling     |
-| **Maintenance** | Ongoing      | Bug fixes, security updates, feature enhancements         |
+| Phase           | Duration     | Status         | Key Deliverables                                             |
+| --------------- | ------------ | -------------- | ------------------------------------------------------------ |
+| **Phase 1**     | Complete     | ✅ Done        | Core RAG pipeline, composable architecture, dual ingestion   |
+| **Phase 2**     | 2-3 months   | 🔄 In Progress | ✅ SSE streaming, ✅ Status tracking, Chat history (planned) |
+| **Phase 3**     | 3-4 months   | 🔄 In Progress | ✅ OpenAI web search, MCP integration, function calling      |
+| **Phase 4**     | 4-6 months   | 📋 Planned     | Production features, monitoring, performance optimization    |
+| **Phase 5**     | 6-8 months   | 📋 Planned     | Multi-agent systems, knowledge graphs                        |
+| **Phase 6**     | 8-12 months  | 📋 Planned     | Enterprise features, security, compliance                    |
+| **Phase 7**     | 12-18 months | 📋 Planned     | SaaS platform, multi-tenancy, billing, global scaling        |
+| **Maintenance** | Ongoing      | 🔄 Active      | Bug fixes, security updates, feature enhancements            |
+
+#### Recent Completions (Phase 2)
+
+**✅ Server-Sent Events (SSE) Streaming**
+
+- Real-time status updates during query processing
+- Custom streaming client implementation (vs EventSource)
+- Comprehensive error handling and connection management
+
+**✅ Status Tracking System**
+
+- Step-by-step progress monitoring for AI operations
+- TypeScript interfaces for type-safe status updates
+- Integration with OpenAI API calls and tool execution
+
+**✅ UI Package Architecture**
+
+- Modular `src/lib/packages/` structure for reusable components
+- SSE streaming client with trainee-friendly documentation
+- React integration examples and usage patterns
+
+**✅ Testing Infrastructure**
+
+- Visual HTML test interface for streaming functionality
+- CLI testing tools with colored terminal output
+- Comprehensive test suite in `examples/sse-streaming-client/`
+
+#### Recent Completions (Phase 3)
+
+**✅ OpenAI Web Search Tool**
+
+- OpenAI function calling integration for web search capabilities
+- Real-time web information retrieval during chat conversations
+- Structured tool interface with proper parameter validation
+- Integration with existing RAG pipeline for enhanced responses
 
 ### Contributing to the Roadmap
 
