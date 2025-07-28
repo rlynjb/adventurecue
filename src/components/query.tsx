@@ -16,6 +16,7 @@ export interface ChatResult {
 }
 
 interface ChatStatus {
+  type?: string;
   description: string;
 }
 
