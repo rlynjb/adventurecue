@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SSE Streaming Test - Query with Status</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .test-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      textarea {
+        width: 100%;
+        height: 80px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: inherit;
+        resize: vertical;
+      }
+      button {
+        background: #007cba;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.2s;
+      }
+      button:hover:not(:disabled) {
+        background: #005a87;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .streaming-status {
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+      .streaming-status.connected {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .streaming-status.disconnected {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .streaming-status.connecting {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      .events-log {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 15px;
+        height: 400px;
+        overflow-y: auto;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .event-item {
+        margin-bottom: 10px;
+        padding: 5px;
+        border-radius: 3px;
+      }
+      .event-status {
+        background: #e3f2fd;
+        border-left: 3px solid #2196f3;
+      }
+      .event-final {
+        background: #e8f5e8;
+        border-left: 3px solid #4caf50;
+      }
+      .event-error {
+        background: #ffebee;
+        border-left: 3px solid #f44336;
+      }
+      .event-timestamp {
+        color: #666;
+        font-size: 11px;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .stat-card {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007cba;
+      }
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+        text-transform: uppercase;
+      }
+      .test-queries {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin: 10px 0;
+      }
+      .quick-query {
+        background: #e9ecef;
+        border: 1px solid #ced4da;
+        padding: 5px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background-color 0.2s;
+      }
+      .quick-query:hover {
+        background: #dee2e6;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧪 SSE Streaming Test - Query with Status</h1>
+
+    <div class="container">
+      <h2>Test Configuration</h2>
+      <textarea id="queryInput" placeholder="Enter your test query here...">
+What are the best places to visit in Tokyo for first-time travelers?</textarea
+      >
+
+      <div class="test-queries">
+        <span style="font-weight: bold; margin-right: 10px"
+          >Quick queries:</span
+        >
+        <div
+          class="quick-query"
+          onclick="setQuery('What are the best restaurants in Paris?')"
+        >
+          Paris restaurants
+        </div>
+        <div
+          class="quick-query"
+          onclick="setQuery('Tell me about Tokyo attractions')"
+        >
+          Tokyo attractions
+        </div>
+        <div
+          class="quick-query"
+          onclick="setQuery('Plan a 3-day trip to Rome')"
+        >
+          Rome trip planning
+        </div>
+        <div
+          class="quick-query"
+          onclick="setQuery('Best hiking trails in Switzerland')"
+        >
+          Switzerland hiking
+        </div>
+        <div
+          class="quick-query"
+          onclick="setQuery('Cultural experiences in Kyoto')"
+        >
+          Kyoto culture
+        </div>
+      </div>
+
+      <div class="test-controls">
+        <button onclick="startStreamingTest()" id="startBtn">
+          🚀 Start Streaming Test
+        </button>
+        <button onclick="stopStreaming()" id="stopBtn" disabled>
+          ⏹️ Stop Streaming
+        </button>
+        <button onclick="clearLog()">🗑️ Clear Log</button>
+        <button onclick="exportLog()">📄 Export Log</button>
+      </div>
+
+      <div id="streamingStatus" class="streaming-status disconnected">
+        ❌ Disconnected - Ready to test
+      </div>
+    </div>
+
+    <div class="container">
+      <h2>Streaming Events Log</h2>
+      <div id="eventsLog" class="events-log">
+        <div style="color: #666; text-align: center; padding: 20px">
+          No events yet. Click "Start Streaming Test" to begin.
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div id="totalEvents" class="stat-value">0</div>
+          <div class="stat-label">Total Events</div>
+        </div>
+        <div class="stat-card">
+          <div id="statusEvents" class="stat-value">0</div>
+          <div class="stat-label">Status Updates</div>
+        </div>
+        <div class="stat-card">
+          <div id="executionTime" class="stat-value">-</div>
+          <div class="stat-label">Execution Time</div>
+        </div>
+        <div class="stat-card">
+          <div id="streamDuration" class="stat-value">-</div>
+          <div class="stat-label">Stream Duration</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Configuration
+      const API_URL =
+        "http://localhost:8888/.netlify/functions/query-with-status";
+
+      // State
+      let streamStartTime = null;
+      let totalEvents = 0;
+      let statusEvents = 0;
+      let isStreaming = false;
+      let currentReader = null;
+
+      // DOM Elements
+      const queryInput = document.getElementById("queryInput");
+      const startBtn = document.getElementById("startBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const streamingStatus = document.getElementById("streamingStatus");
+      const eventsLog = document.getElementById("eventsLog");
+
+      function setQuery(query) {
+        queryInput.value = query;
+      }
+
+      function updateStreamingStatus(status, message) {
+        streamingStatus.className = `streaming-status ${status}`;
+        streamingStatus.innerHTML = message;
+      }
+
+      function logEvent(eventData, rawLine = null) {
+        const timestamp = new Date().toLocaleTimeString();
+        const eventDiv = document.createElement("div");
+        eventDiv.className = `event-item event-${eventData.type || "unknown"}`;
+
+        let content = `<div class="event-timestamp">[${timestamp}]</div>`;
+
+        if (eventData.type === "status" && eventData.status) {
+          content += `<strong>STATUS:</strong> Step ${eventData.status.step} - ${eventData.status.description} (${eventData.status.status})`;
+          statusEvents++;
+          document.getElementById("statusEvents").textContent = statusEvents;
+        } else if (eventData.type === "final" && eventData.result) {
+          content += `<strong>FINAL:</strong> ${eventData.result.response.substring(
+            0,
+            100
+          )}...`;
+          content += `<br><small>Tools: ${
+            eventData.result.toolsUsed.join(", ") || "None"
+          } | Steps: ${eventData.result.steps.length}</small>`;
+          document.getElementById(
+            "executionTime"
+          ).textContent = `${eventData.result.executionTimeMs}ms`;
+        } else if (eventData.type === "error") {
+          content += `<strong>ERROR:</strong> ${eventData.error}`;
+        } else {
+          content += `<strong>UNKNOWN:</strong> ${JSON.stringify(eventData)}`;
+        }
+
+        if (rawLine) {
+          content += `<br><small style="color: #999;">Raw: ${rawLine}</small>`;
+        }
+
+        eventDiv.innerHTML = content;
+        eventsLog.appendChild(eventDiv);
+
+        // Auto-scroll to bottom
+        eventsLog.scrollTop = eventsLog.scrollHeight;
+
+        // Update stats
+        totalEvents++;
+        document.getElementById("totalEvents").textContent = totalEvents;
+
+        if (streamStartTime) {
+          const duration = Date.now() - streamStartTime;
+          document.getElementById("streamDuration").textContent = `${(
+            duration / 1000
+          ).toFixed(1)}s`;
+        }
+      }
+
+      async function startStreamingTest() {
+        const query = queryInput.value.trim();
+        if (!query) {
+          alert("Please enter a test query");
+          return;
+        }
+
+        // Reset state
+        totalEvents = 0;
+        statusEvents = 0;
+        streamStartTime = Date.now();
+        isStreaming = true;
+
+        // Update UI
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        updateStreamingStatus(
+          "connecting",
+          "🔄 Connecting to streaming endpoint..."
+        );
+
+        // Clear previous stats
+        document.getElementById("totalEvents").textContent = "0";
+        document.getElementById("statusEvents").textContent = "0";
+        document.getElementById("executionTime").textContent = "-";
+        document.getElementById("streamDuration").textContent = "-";
+
+        try {
+          console.log("🚀 Starting streaming test with query:", query);
+
+          const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: query,
+              streaming: true,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          updateStreamingStatus(
+            "connected",
+            "✅ Connected - Receiving events..."
+          );
+
+          currentReader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          while (isStreaming) {
+            const { done, value } = await currentReader.read();
+
+            if (done) {
+              console.log("✅ Stream completed naturally");
+              break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete lines
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const eventData = JSON.parse(line.slice(6));
+                  logEvent(eventData, line);
+                } catch (e) {
+                  console.warn("Could not parse event:", line);
+                  logEvent(
+                    { type: "parse-error", error: "Could not parse JSON" },
+                    line
+                  );
+                }
+              } else if (line.trim()) {
+                console.log("Non-data line:", line);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("❌ Streaming test failed:", error);
+          logEvent({ type: "error", error: error.message });
+          updateStreamingStatus("disconnected", `❌ Error: ${error.message}`);
+        } finally {
+          stopStreaming();
+        }
+      }
+
+      function stopStreaming() {
+        isStreaming = false;
+
+        if (currentReader) {
+          currentReader.releaseLock();
+          currentReader = null;
+        }
+
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        updateStreamingStatus("disconnected", "⏹️ Streaming stopped");
+
+        console.log("🛑 Streaming test stopped");
+      }
+
+      function clearLog() {
+        eventsLog.innerHTML =
+          '<div style="color: #666; text-align: center; padding: 20px;">Log cleared. Ready for new test.</div>';
+
+        // Reset stats
+        totalEvents = 0;
+        statusEvents = 0;
+        document.getElementById("totalEvents").textContent = "0";
+        document.getElementById("statusEvents").textContent = "0";
+        document.getElementById("executionTime").textContent = "-";
+        document.getElementById("streamDuration").textContent = "-";
+      }
+
+      function exportLog() {
+        const logContent = eventsLog.innerText;
+        const blob = new Blob([logContent], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `sse-streaming-test-${new Date()
+          .toISOString()
+          .slice(0, 19)}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        URL.revokeObjectURL(url);
+      }
+
+      // Initialize
+      console.log("🧪 SSE Streaming Test initialized");
+      console.log(
+        "Make sure your Netlify dev server is running on localhost:8888"
+      );
+
+      // Handle page unload
+      window.addEventListener("beforeunload", () => {
+        if (isStreaming) {
+          stopStreaming();
+        }
+      });
+    </script>
+  </body>
+</html>
