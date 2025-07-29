@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getOpenAIClient } from "../clients";
-import { ChatResponse, ChatStatus } from "../types/chat";
-import { EmbeddingRow } from "../types/embedding";
-import { ChatStatusMessages, ChatStatusTracker } from "./chat-status-tracking";
+import { getOpenAIClient } from "@netlify/clients";
+import { ChatStatusMessages, ChatStatusTracker } from "@netlify/services/chat";
+import { ChatResponse, ChatStatus } from "@netlify/services/chat/types";
+import { type EmbeddingRow } from "@netlify/services/embedding/types";
 
 const openai = getOpenAIClient();
 
