@@ -10,6 +10,8 @@ This guide documents the chronological development journey of AdventureCue, show
 | **July 22, 2025** | Phase 2 | Agentic Enhancement   | `agentic-vs-traditional-rag.md`                                                                              |
 | **July 27, 2025** | Phase 3 | System Refactoring    | `architecture-overview.md`, `chat-system-diagrams.md`, `status-tracking-guide.md`, `type-system-overview.md` |
 
+**🚀 Future Development**: See [`roadmap.md`](./roadmap.md) for the complete development roadmap including upcoming phases for chat history, MCP tooling, production MVP, multi-agent systems, and RAG SaaS platform development.
+
 ---
 
 ## 🏗️ Phase 1: Foundation & RAG Core (July 10, 2025)
@@ -159,7 +161,8 @@ User Query → Status Tracking → OpenAI Analysis → Tool Decision → Tool Ex
 1. **[`README.md`](../README.md)** - Project overview and quick start
 2. **[`rag-architecture.md`](./rag-architecture.md)** - Core concepts and foundation
 3. **[`architecture-overview.md`](./architecture-overview.md)** - System design
-4. **[`GETTING_STARTED.md`](../GETTING_STARTED.md)** - Setup and first steps
+4. **[`roadmap.md`](./roadmap.md)** - Complete development roadmap and future phases
+5. **[`GETTING_STARTED.md`](../GETTING_STARTED.md)** - Setup and first steps
 
 ### For Understanding the AI System
 
@@ -242,11 +245,20 @@ User Query → Status Tracking → OpenAI Analysis → Tool Decision → Tool Ex
 
 ## 🚀 Next Steps After Completing All Phases
 
-1. **Explore Advanced Features**: Chat history, session management
-2. **Performance Optimization**: Caching, rate limiting, scaling
-3. **Custom Tool Development**: Build domain-specific tools
-4. **Production Deployment**: Security, monitoring, observability
-5. **Integration**: Connect with external systems and APIs
+**📋 Detailed Roadmap**: For a comprehensive development plan including detailed checklists and timelines, see [`roadmap.md`](./roadmap.md) which outlines:
+
+1. **Phase 4**: Chat history and session management
+2. **Phase 5**: MCP tooling and advanced AI integration
+3. **Phase 6**: Production MVP and admin dashboard
+4. **Phase 7**: Multi-agent systems
+5. **Phase 8**: RAG Software as a Service platform
+
+**Additional Development Areas**:
+
+1. **Performance Optimization**: Caching, rate limiting, scaling
+2. **Custom Tool Development**: Build domain-specific tools
+3. **Production Deployment**: Security, monitoring, observability
+4. **Integration**: Connect with external systems and APIs
 
 ---
 
