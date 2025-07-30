@@ -69,17 +69,27 @@ adventurecue/
 │   ├── functions/
 │   │   ├── ingest.ts             # Ingestion endpoint - text processing & embedding storage
 │   │   ├── query.ts              # Query endpoint - semantic search & response generation
-│   │   └── query-with-status.ts  # Query endpoint with real-time status updates
+│   │   └── query-with-status.ts  # Query endpoint with real-time status updates & memory
 │   ├── services/
 │   │   ├── chat/
 │   │   │   ├── chat.ts           # Chat service - generateAnswer, buildContextPrompt
 │   │   │   ├── chat-status-tracking.ts  # Real-time status tracking for chat operations
 │   │   │   ├── chat-status-examples.ts  # Example status messages
+│   │   │   ├── memory.ts         # Chat memory functions - session & message management
 │   │   │   ├── types.ts          # Chat-related type definitions
 │   │   │   └── index.ts          # Chat service exports
-│   │   ├── embedding/            # Embedding service - generateEmbedding, findSimilarEmbeddings
-│   │   ├── ingestion/            # Ingestion service - saveEmbedding, processFile, processText
-│   │   ├── query/                # Query service - processQuery orchestration
+│   │   ├── embedding/
+│   │   │   ├── embedding.ts      # Embedding generation & similarity search
+│   │   │   ├── types.ts          # Embedding-related type definitions
+│   │   │   └── index.ts          # Embedding service exports
+│   │   ├── ingestion/
+│   │   │   ├── ingestion.ts      # Text processing & database storage
+│   │   │   ├── types.ts          # Ingestion-related type definitions
+│   │   │   └── index.ts          # Ingestion service exports
+│   │   ├── query/
+│   │   │   ├── query.ts          # Query orchestration & processing
+│   │   │   ├── types.ts          # Query-related type definitions
+│   │   │   └── index.ts          # Query service exports
 │   │   └── index.ts              # Service layer exports
 │   └── utils/                    # Utility functions
 ├── public/                       # Static assets
