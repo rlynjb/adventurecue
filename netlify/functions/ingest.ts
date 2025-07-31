@@ -1,4 +1,4 @@
-import { processText } from "@netlify/services/ingestion";
+import { processText } from "../services/ingestion";
 
 /**
  * @NOTE

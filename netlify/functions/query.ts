@@ -1,8 +1,8 @@
-import { processQuery } from "@netlify/services/query";
+import { processQuery } from "../services/query";
 import {
   validateRequest,
   type ValidateRequest,
-} from "@netlify/utils/validation";
+} from "../utils/validation";
 
 const handler = async (req: Request) => {
   if (req.method !== "POST") {

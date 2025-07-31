@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import { ingestFiles } from "../netlify/services";
-import { IngestionConfig } from "../netlify/types";
+import { ingestFiles } from "../netlify/services/ingestion";
+import { IngestionConfig } from "../netlify/services/ingestion/types";
 
 // Environment validation
 const OPENAI_KEY = process.env.OPENAI_API_KEY;

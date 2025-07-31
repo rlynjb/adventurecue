@@ -1,4 +1,4 @@
-import { FileData } from "@netlify/services/ingestion/types";
+import { FileData } from "../services/ingestion/types";
 import { readdir, readFile } from "fs/promises";
 import path from "path";
 

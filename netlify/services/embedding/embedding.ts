@@ -1,5 +1,5 @@
-import { getOpenAIClient, getSQLClient } from "@netlify/clients";
-import { type EmbeddingRow } from "@netlify/services/embedding/types";
+import { getOpenAIClient, getSQLClient } from "../../clients";
+import { type EmbeddingRow } from "./types";
 
 const openai = getOpenAIClient();
 const sql = getSQLClient();

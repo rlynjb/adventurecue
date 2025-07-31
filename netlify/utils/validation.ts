@@ -1,4 +1,4 @@
-import { QueryRequest } from "@netlify/services/query/types";
+import { QueryRequest } from "../services/query/types";
 
 export interface ValidateRequest {
   isValid: boolean;

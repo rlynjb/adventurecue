@@ -1,13 +1,13 @@
-import { getDrizzleClient } from "@netlify/clients";
-import { generateEmbedding } from "@netlify/services/embedding";
+import { getDrizzleClient } from "../../clients";
+import { generateEmbedding } from "../embedding";
 import {
   EmbeddingData,
   IngestionConfig,
   ProcessingResult,
-} from "@netlify/services/ingestion/types";
-import { readFileData, walkDirectory } from "@netlify/utils/file-system";
-import { rateLimitDelay } from "@netlify/utils/rate-limiting";
-import { embeddings } from "@root/db/schema";
+} from "./types";
+import { readFileData, walkDirectory } from "../../utils/file-system";
+import { rateLimitDelay } from "../../utils/rate-limiting";
+import { embeddings } from "../../../db/schema";
 import { sql } from "drizzle-orm";
 import path from "path";
 
