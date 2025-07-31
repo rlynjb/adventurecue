@@ -239,7 +239,7 @@ sequenceDiagram
     participant OpenAI
     participant Tools
 
-    Client->>NetlifyFunction: POST /api/query-with-status
+    Client->>NetlifyFunction: POST /api/chat
     NetlifyFunction->>ChatService: generateAnswer(query, context, callback)
 
     ChatService->>ChatService: createStatus(1, "Analyzing query", "executing")

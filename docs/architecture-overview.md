@@ -12,7 +12,7 @@ graph TB
 
     subgraph "API Layer"
         D[Netlify Functions]
-        E[query-with-status.ts]
+        E[chat.ts]
         F[Validation Utils]
     end
 

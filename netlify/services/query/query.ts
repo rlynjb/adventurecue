@@ -2,7 +2,8 @@ import {
   findSimilarEmbeddings,
   generateEmbedding
 } from "../embedding";
-import { buildContextPrompt, generateSimpleAnswer} from "../chat";
+import { generateSimpleAnswer} from "../chat";
+import { buildContextPrompt } from "../chat/helpers";
 import { QueryRequest } from "./types";
 
 /**

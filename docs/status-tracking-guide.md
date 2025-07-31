@@ -114,7 +114,7 @@ return new Response(stream, {
 
 ```javascript
 // Client-side
-const response = await fetch("/api/query-with-status", {
+const response = await fetch("/api/chat", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ query: userQuery, streaming: true }),
@@ -155,7 +155,7 @@ function ChatWithStatus() {
     setResponse("");
 
     try {
-      const result = await fetch("/api/query-with-status", {
+      const result = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
@@ -265,7 +265,7 @@ The `ChatResponse` includes timing information:
 ## Files
 
 - `netlify/services/chat.ts` - Main chat service with status tracking
-- `netlify/functions/query-with-status.ts` - Example Netlify function
+- `netlify/functions/chat.ts` - Example Netlify function
 - `examples/client-status-handling.ts` - Client-side JavaScript examples
 - `examples/status-demo.html` - Interactive HTML demo
 

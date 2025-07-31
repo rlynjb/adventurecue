@@ -1,115 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getOpenAIClient } from "../../clients";
 import { ChatStatusMessages, ChatStatusTracker } from "./chat-status-tracking";
 import { ChatResponse, ChatStatus } from "./types";
-import { type EmbeddingRow } from "../embedding/types";
-
-const openai = getOpenAIClient();
-
-/**
- * Makes an OpenAI API call with the given parameters
- */
-const callOpenAI = async (
-  input: any[],
-  tools: any[],
-  store = false
-): Promise<any> => {
-  return await openai.responses.create({
-    model: "gpt-4.1",
-    input,
-    tools,
-    ...(store && { store: true }),
-  });
-};
-
-/**
- * Executes different tool types using a simple switch statement
- */
-const executeToolCall = async (
-  toolCall: any,
-  context: { query: string; contextText: string },
-  statusTracker: ChatStatusTracker
-): Promise<any> => {
-  const toolType = toolCall.type || "unknown";
-
-  // Update status: Starting tool execution
-  statusTracker.executing(3, ChatStatusMessages.EXECUTING_TOOL(toolType), {
-    toolType,
-  });
-
-  console.log(`Executing tool: ${toolCall.type}`);
-
-  try {
-    switch (toolCall.type) {
-      case "web_search_call":
-        console.log("Searching web.....", { query: context.query });
-        statusTracker.executing(3, ChatStatusMessages.WEB_SEARCH_START);
-
-        // Custom web search logic can go here
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate web search delay
-
-        statusTracker.completed(3, ChatStatusMessages.WEB_SEARCH_COMPLETE);
-        return toolCall;
-
-      case "custom_api_call":
-        console.log("Calling custom API.....", {
-          toolCall: toolCall.type,
-          query: context.query,
-        });
-        statusTracker.executing(3, ChatStatusMessages.API_CALL_START);
-
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        statusTracker.completed(3, ChatStatusMessages.API_CALL_COMPLETE);
-        return {
-          ...toolCall,
-          result: `Custom API result for: ${context.query}`,
-          timestamp: Date.now(),
-        };
-
-      case "database_lookup":
-        console.log("Looking up database.....", { query: context.query });
-        statusTracker.executing(3, ChatStatusMessages.DB_LOOKUP_START);
-
-        // Simulate database lookup
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        statusTracker.completed(3, ChatStatusMessages.DB_LOOKUP_COMPLETE);
-        return {
-          ...toolCall,
-          result: `Database result for: ${context.query}`,
-          found: true,
-        };
-
-      default:
-        console.log(
-          `Unknown tool type: ${toolCall.type}, using default behavior`
-        );
-        statusTracker.completed(3, `Using default behavior for ${toolType}`);
-        return toolCall;
-    }
-  } catch (error) {
-    statusTracker.failed(
-      3,
-      ChatStatusMessages.TOOL_FAILED(toolType, String(error)),
-      { error }
-    );
-    throw error;
-  }
-};
-
-/**
- * Formats context text from database results
- *
- * @desc Builds a context prompt from the provided embedding rows.
- * @param rows The rows of embedding data to build context from
- * @returns A string representing the context prompt
- */
-export const buildContextPrompt = (rows: EmbeddingRow[]): string => {
-  return rows.map((row, i) => `Context ${i + 1}:\n${row.content}`).join("\n\n");
-};
+import { executeToolCall } from "./tools";
+import { callOpenAI } from "./helpers";
 
 /**
  * Handles OpenAI chat completion with status tracking
@@ -179,7 +73,7 @@ export const generateAnswer = async (
     /**
      * Step 2: Model decides to call function(s) – model returns the name and input arguments.
      */
-    console.log("tools LLM wants to call -----", response.output);
+    //console.log("tools LLM wants to call -----", response.output);
 
     /**
      * Step 3: Execute function code – parse the model's response and handle function calls.
@@ -207,7 +101,7 @@ export const generateAnswer = async (
       /**
        * Step 5: Model responds – incorporating the result in its output.
        */
-      console.log("final response --- ", followUpResponse.output);
+      //console.log("final response --- ", followUpResponse.output);
       statusTracker.completed(5, ChatStatusMessages.RESPONSE_COMPLETE);
 
       return {
@@ -219,7 +113,7 @@ export const generateAnswer = async (
       };
     }
 
-    console.log("sufficient response ----", response.output);
+    //console.log("sufficient response ----", response.output);
     statusTracker.completed(2, ChatStatusMessages.RESPONSE_COMPLETE_NO_TOOLS);
 
     return {

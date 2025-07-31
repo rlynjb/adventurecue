@@ -15,7 +15,7 @@ This document outlines the Retrieval-Augmented Generation (RAG) architecture imp
 ## Available Endpoints
 
 - **`/.netlify/functions/query`** - Semantic search and response generation
-- **`/.netlify/functions/query-with-status`** - Query with real-time status updates
+- **`/.netlify/functions/chat`** - Query with real-time status updates
 - **`/.netlify/functions/ingest`** - Text ingestion through web UI
 - **CLI ingestion** - Bulk file processing via `tsx bin/ingest.ts`
 
@@ -69,7 +69,7 @@ adventurecue/
 │   ├── functions/
 │   │   ├── ingest.ts             # Ingestion endpoint - text processing & embedding storage
 │   │   ├── query.ts              # Query endpoint - semantic search & response generation
-│   │   └── query-with-status.ts  # Query endpoint with real-time status updates & memory
+│   │   └── chat.ts               # Query endpoint with real-time status updates & memory
 │   ├── services/
 │   │   ├── chat/
 │   │   │   ├── chat.ts           # Chat service - generateAnswer, buildContextPrompt

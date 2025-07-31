@@ -457,7 +457,7 @@ export async function example4_NonStreaming(
 ): Promise<StreamEvent["result"]> {
   console.log("📞 Making non-streaming request...");
 
-  const response = await fetch("/api/query-with-status", {
+  const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

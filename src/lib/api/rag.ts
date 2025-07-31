@@ -3,7 +3,7 @@ import { RAGIngest, RAGQuery, RAGResponse } from "@/lib/types";
 export const endpoint = {
   query: "/.netlify/functions/query",
   ingest: "/.netlify/functions/ingest",
-  queryStream: "/.netlify/functions/query-with-status",
+  queryStream: "/.netlify/functions/chat",
 };
 
 export const queryRAG = async (queryObj: RAGQuery): Promise<RAGResponse> => {

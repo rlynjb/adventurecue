@@ -87,7 +87,7 @@ const eventSource = new EventSource("/api/events", {
 
 ```typescript
 // ✅ POST requests with clean JSON bodies
-const response = await fetch("/api/query-with-status", {
+const response = await fetch("/api/chat", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
