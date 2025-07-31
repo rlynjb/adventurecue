@@ -1,11 +1,10 @@
 import {
   buildContextPrompt,
   findSimilarEmbeddings,
-  //generateAnswer,
   generateEmbedding,
   generateSimpleAnswer,
-} from "../services";
-import { QueryRequest } from "../types";
+} from "@netlify/services";
+import { QueryRequest } from "@netlify/services/query/types";
 
 /**
  * Orchestrates the entire query pipeline

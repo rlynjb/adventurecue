@@ -15,6 +15,7 @@ This document outlines the Retrieval-Augmented Generation (RAG) architecture imp
 ## Available Endpoints
 
 - **`/.netlify/functions/query`** - Semantic search and response generation
+- **`/.netlify/functions/query-with-status`** - Query with real-time status updates
 - **`/.netlify/functions/ingest`** - Text ingestion through web UI
 - **CLI ingestion** - Bulk file processing via `tsx bin/ingest.ts`
 
@@ -49,75 +50,104 @@ The generation phase uses the augmented context to produce AI-generated response
 ## Directory Structure
 
 ```
-netlify/
-├── functions/
-│   ├── query.ts                    # Query endpoint - semantic search & response generation
-│   ├── ingest.ts                   # Ingestion endpoint - text processing & embedding storage
-│   └── search.ts                   # Additional search endpoints - TBD
-├── lib/
-│   ├── clients/
-│   │   ├── openai.ts              # OpenAI client initialization
-│   │   ├── database.ts            # Neon database client + Drizzle
-│   │   └── index.ts               # Export all clients
-│   ├── services/
-│   │   ├── embedding.ts           # generateEmbedding, findSimilarEmbeddings
-│   │   ├── chat.ts                # generateAnswer, buildContextPrompt
-│   │   ├── query.ts               # processQuery orchestration
-│   │   ├── ingestion.ts           # saveEmbedding, processFile, processText, ingestFiles
-│   │   └── index.ts               # Export all services
-│   ├── types/
-│   │   ├── query.ts               # QueryRequest, EmbeddingRow interfaces
-│   │   ├── embedding.ts           # Embedding-related types
-│   │   ├── ingestion.ts           # FileData, EmbeddingData, ProcessingResult
-│   │   └── index.ts               # Export all types
-│   ├── utils/
-│   │   ├── validation.ts          # validateRequest, other validators
-│   │   ├── response.ts            # Response helpers
-│   │   ├── file-system.ts         # walkDirectory, readFileData
-│   │   ├── rate-limiting.ts       # rateLimitDelay, createRateLimiter
-│   │   └── index.ts               # Export all utils
-│   └── config/
-│       └── environment.ts         # Environment variable handling
-├── shared/
-│   ├── middleware/
-│   │   ├── cors.ts                # CORS middleware
-│   │   └── auth.ts                # Authentication middleware
-│   └── constants/
-│       └── models.ts              # AI model constants
+adventurecue/
 ├── bin/
-│   ├── ingest.ts                  # CLI ingestion script
-│   └── migrate.ts                 # Database migration script
-└── db/
-    ├── index.ts                   # Database connection and setup
-    ├── schema.ts                  # Database schema definitions
-    └── migrations/                # Database migration files
+│   └── ingest.ts                  # CLI ingestion script
+├── data/                          # Data storage directory
+├── db/
+│   ├── index.ts                   # Database connection and setup
+│   └── schema.ts                  # Database schema definitions
+├── docs/                          # Documentation files
+├── examples/                      # Example code and usage
+├── migrations/                    # Database migration files
+│   ├── 0000_enable-pgvector.sql
+│   ├── 0001_create-tables.sql
+│   ├── 0002_create-ivfflat-index.sql
+│   └── meta/                      # Migration metadata
+├── netlify/
+│   ├── clients/                   # External service clients
+│   ├── functions/
+│   │   ├── ingest.ts             # Ingestion endpoint - text processing & embedding storage
+│   │   ├── query.ts              # Query endpoint - semantic search & response generation
+│   │   └── query-with-status.ts  # Query endpoint with real-time status updates & memory
+│   ├── services/
+│   │   ├── chat/
+│   │   │   ├── chat.ts           # Chat service - generateAnswer, buildContextPrompt
+│   │   │   ├── chat-status-tracking.ts  # Real-time status tracking for chat operations
+│   │   │   ├── chat-status-examples.ts  # Example status messages
+│   │   │   ├── memory.ts         # Chat memory functions - session & message management
+│   │   │   ├── types.ts          # Chat-related type definitions
+│   │   │   └── index.ts          # Chat service exports
+│   │   ├── embedding/
+│   │   │   ├── embedding.ts      # Embedding generation & similarity search
+│   │   │   ├── types.ts          # Embedding-related type definitions
+│   │   │   └── index.ts          # Embedding service exports
+│   │   ├── ingestion/
+│   │   │   ├── ingestion.ts      # Text processing & database storage
+│   │   │   ├── types.ts          # Ingestion-related type definitions
+│   │   │   └── index.ts          # Ingestion service exports
+│   │   ├── query/
+│   │   │   ├── query.ts          # Query orchestration & processing
+│   │   │   ├── types.ts          # Query-related type definitions
+│   │   │   └── index.ts          # Query service exports
+│   │   └── index.ts              # Service layer exports
+│   └── utils/                    # Utility functions
+├── public/                       # Static assets
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── src/
+│   ├── app/
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx            # Next.js app layout
+│   │   └── page.tsx              # Main page component
+│   ├── components/
+│   │   ├── ingest.tsx            # Ingestion UI component
+│   │   └── query.tsx             # Query UI component
+│   └── lib/                      # Frontend utilities
+└── Configuration Files:
+    ├── drizzle.config.ts         # Drizzle ORM configuration
+    ├── eslint.config.mjs         # ESLint configuration
+    ├── next.config.ts            # Next.js configuration
+    ├── package.json              # Project dependencies
+    ├── postcss.config.mjs        # PostCSS configuration
+    ├── tsconfig.json            # TypeScript configuration
+    └── setup.sh                 # Project setup script
 ```
 
 ## Client Initialization Pattern
 
 ### Singleton Pattern for Shared Clients
 
-**OpenAI Client (`netlify/lib/clients/openai.ts`):**
+**OpenAI Client (`netlify/clients/openai.ts`):**
 
-**Database Client (`netlify/lib/clients/database.ts`):**
+**Database Client (`netlify/clients/database.ts`):**
 
 ## Utility Functions
 
-**File System Utilities (`netlify/lib/utils/file-system.ts`)**
+**File System Utilities (`netlify/utils/file-system.ts`)**
 
-**Rate Limiting Utilities (`netlify/lib/utils/rate-limiting.ts`)**
+**Rate Limiting Utilities (`netlify/utils/rate-limiting.ts`)**
 
 ## Type Definitions
 
-**Ingestion Types (`netlify/lib/types/ingestion.ts`)**
+**Chat Types (`netlify/services/chat/types.ts`)**
 
 ## Service Layer Implementation
 
-**Embedding Service (`netlify/lib/services/embedding.ts`)**
+**Embedding Service (`netlify/services/embedding/`):**
 
-**Chat Service (`netlify/lib/services/chat.ts`)**
+**Chat Service (`netlify/services/chat/chat.ts`):**
 
-**Ingestion Service (`netlify/lib/services/ingestion.ts`)**
+- Real-time status tracking (`netlify/services/chat/chat-status-tracking.ts`)
+- Status examples (`netlify/services/chat/chat-status-examples.ts`)
+
+**Ingestion Service (`netlify/services/ingestion/`):**
+
+**Query Service (`netlify/services/query/`):**
 
 ## CLI Scripts
 

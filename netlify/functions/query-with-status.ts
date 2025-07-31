@@ -1,6 +1,9 @@
-import { generateAnswer } from "../services/chat";
-import { ChatResponse, ChatStatus } from "../types/chat";
-import { validateRequest, type ValidateRequest } from "../utils/validation";
+import { generateAnswer } from "@netlify/services/chat/chat";
+import { ChatResponse, ChatStatus } from "@netlify/services/chat/types";
+import {
+  validateRequest,
+  type ValidateRequest,
+} from "@netlify/utils/validation";
 
 /**
  * Enhanced query handler with real-time status updates

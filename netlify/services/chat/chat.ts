@@ -1,28 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getOpenAIClient } from "../clients";
-import { ChatResponse, ChatStatus } from "../types/chat";
-import { EmbeddingRow } from "../types/embedding";
+import { getOpenAIClient } from "@netlify/clients";
+import { ChatStatusMessages, ChatStatusTracker } from "@netlify/services/chat";
+import { ChatResponse, ChatStatus } from "@netlify/services/chat/types";
+import { type EmbeddingRow } from "@netlify/services/embedding/types";
 
 const openai = getOpenAIClient();
-
-/**
- * Creates a status update
- */
-const createStatus = (
-  step: number,
-  description: string,
-  status: ChatStatus["status"],
-  data?: any
-): ChatStatus => {
-  return {
-    step,
-    description,
-    status,
-    timestamp: Date.now(),
-    data,
-  };
-};
 
 /**
  * Makes an OpenAI API call with the given parameters
@@ -46,14 +29,14 @@ const callOpenAI = async (
 const executeToolCall = async (
   toolCall: any,
   context: { query: string; contextText: string },
-  onStatusUpdate?: (status: ChatStatus) => void
+  statusTracker: ChatStatusTracker
 ): Promise<any> => {
   const toolType = toolCall.type || "unknown";
 
   // Update status: Starting tool execution
-  onStatusUpdate?.(
-    createStatus(3, `Executing ${toolType}`, "executing", { toolType })
-  );
+  statusTracker.executing(3, ChatStatusMessages.EXECUTING_TOOL(toolType), {
+    toolType,
+  });
 
   console.log(`Executing tool: ${toolCall.type}`);
 
@@ -61,16 +44,12 @@ const executeToolCall = async (
     switch (toolCall.type) {
       case "web_search_call":
         console.log("Searching web.....", { query: context.query });
-        onStatusUpdate?.(
-          createStatus(
-            3,
-            "Searching the web for relevant information",
-            "executing"
-          )
-        );
+        statusTracker.executing(3, ChatStatusMessages.WEB_SEARCH_START);
+
         // Custom web search logic can go here
         await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate web search delay
-        onStatusUpdate?.(createStatus(3, "Web search completed", "completed"));
+
+        statusTracker.completed(3, ChatStatusMessages.WEB_SEARCH_COMPLETE);
         return toolCall;
 
       case "custom_api_call":
@@ -78,18 +57,12 @@ const executeToolCall = async (
           toolCall: toolCall.type,
           query: context.query,
         });
-        onStatusUpdate?.(
-          createStatus(
-            3,
-            "Calling external API for additional data",
-            "executing"
-          )
-        );
+        statusTracker.executing(3, ChatStatusMessages.API_CALL_START);
+
         // Simulate API call
         await new Promise((resolve) => setTimeout(resolve, 500));
-        onStatusUpdate?.(
-          createStatus(3, "API call completed successfully", "completed")
-        );
+
+        statusTracker.completed(3, ChatStatusMessages.API_CALL_COMPLETE);
         return {
           ...toolCall,
           result: `Custom API result for: ${context.query}`,
@@ -98,18 +71,12 @@ const executeToolCall = async (
 
       case "database_lookup":
         console.log("Looking up database.....", { query: context.query });
-        onStatusUpdate?.(
-          createStatus(
-            3,
-            "Searching database for relevant records",
-            "executing"
-          )
-        );
+        statusTracker.executing(3, ChatStatusMessages.DB_LOOKUP_START);
+
         // Simulate database lookup
         await new Promise((resolve) => setTimeout(resolve, 300));
-        onStatusUpdate?.(
-          createStatus(3, "Database lookup completed", "completed")
-        );
+
+        statusTracker.completed(3, ChatStatusMessages.DB_LOOKUP_COMPLETE);
         return {
           ...toolCall,
           result: `Database result for: ${context.query}`,
@@ -120,14 +87,14 @@ const executeToolCall = async (
         console.log(
           `Unknown tool type: ${toolCall.type}, using default behavior`
         );
-        onStatusUpdate?.(
-          createStatus(3, `Using default behavior for ${toolType}`, "completed")
-        );
+        statusTracker.completed(3, `Using default behavior for ${toolType}`);
         return toolCall;
     }
   } catch (error) {
-    onStatusUpdate?.(
-      createStatus(3, `Tool execution failed: ${error}`, "failed", { error })
+    statusTracker.failed(
+      3,
+      ChatStatusMessages.TOOL_FAILED(toolType, String(error)),
+      { error }
     );
     throw error;
   }
@@ -160,21 +127,14 @@ export const generateAnswer = async (
   onStatusUpdate?: (status: ChatStatus) => void
 ): Promise<ChatResponse> => {
   const startTime = Date.now();
-  const steps: ChatStatus[] = [];
+  const statusTracker = new ChatStatusTracker(onStatusUpdate);
   const toolsUsed: string[] = [];
-
-  const updateStatus = (status: ChatStatus) => {
-    steps.push(status);
-    onStatusUpdate?.(status);
-  };
 
   try {
     /**
      * Step 1: Call model with user query, context from vector DB, and tools.
      */
-    updateStatus(
-      createStatus(1, "Analyzing your query and preparing request", "executing")
-    );
+    statusTracker.executing(1, ChatStatusMessages.ANALYZING_QUERY);
 
     const input: any[] = [
       {
@@ -209,16 +169,12 @@ export const generateAnswer = async (
       { type: "web_search_preview_2025_03_11" },
     ];
 
-    updateStatus(
-      createStatus(1, "Query prepared, calling OpenAI", "completed")
-    );
-    updateStatus(createStatus(2, "Waiting for OpenAI response", "executing"));
+    statusTracker.completed(1, ChatStatusMessages.QUERY_PREPARED);
+    statusTracker.executing(2, ChatStatusMessages.WAITING_OPENAI);
 
     const response = await callOpenAI(input, tools);
 
-    updateStatus(
-      createStatus(2, "Received initial response from OpenAI", "completed")
-    );
+    statusTracker.completed(2, ChatStatusMessages.RECEIVED_RESPONSE);
 
     /**
      * Step 2: Model decides to call function(s) – model returns the name and input arguments.
@@ -236,64 +192,52 @@ export const generateAnswer = async (
       const toolResult = await executeToolCall(
         toolCall,
         { query, contextText },
-        updateStatus
+        statusTracker
       );
 
       /**
        * Step 4: Supply model with results – so it can incorporate them into its final response.
        */
-      updateStatus(
-        createStatus(4, "Sending tool results back to OpenAI", "executing")
-      );
+      statusTracker.executing(4, ChatStatusMessages.SENDING_TOOL_RESULTS);
       input.push(toolResult);
 
       const followUpResponse = await callOpenAI(input, tools, true);
-      updateStatus(
-        createStatus(4, "Received final response from OpenAI", "completed")
-      );
+      statusTracker.completed(4, ChatStatusMessages.RECEIVED_FINAL);
 
       /**
        * Step 5: Model responds – incorporating the result in its output.
        */
       console.log("final response --- ", followUpResponse.output);
-      updateStatus(
-        createStatus(5, "Response generation completed", "completed")
-      );
+      statusTracker.completed(5, ChatStatusMessages.RESPONSE_COMPLETE);
 
       return {
         success: true,
         response: followUpResponse.output_text ?? "",
-        steps,
+        steps: statusTracker.getSteps(),
         toolsUsed,
         executionTimeMs: Date.now() - startTime,
       };
     }
 
     console.log("sufficient response ----", response.output);
-    updateStatus(
-      createStatus(
-        2,
-        "Response generation completed (no tools needed)",
-        "completed"
-      )
-    );
+    statusTracker.completed(2, ChatStatusMessages.RESPONSE_COMPLETE_NO_TOOLS);
 
     return {
       success: true,
       response: response.output_text ?? "",
-      steps,
+      steps: statusTracker.getSteps(),
       toolsUsed,
       executionTimeMs: Date.now() - startTime,
     };
   } catch (error) {
-    updateStatus(
-      createStatus(-1, `Error occurred: ${error}`, "failed", { error })
-    );
+    statusTracker.failed(-1, ChatStatusMessages.ERROR_OCCURRED(String(error)), {
+      error,
+    });
     return {
       success: false,
       response:
         "I apologize, but I encountered an error while processing your request.",
-      steps,
+      steps: statusTracker.getSteps(),
       toolsUsed,
       executionTimeMs: Date.now() - startTime,
     };
