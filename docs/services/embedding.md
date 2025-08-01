@@ -54,8 +54,8 @@ graph TD
     H --> I[Cosine Distance Calculation]
     I --> J[Ranked Similar Embeddings]
 
-    style C fill:#e1f5fe
-    style H fill:#e8f5e8
+    style C fill:#1976d2
+    style H fill:#388e3c
 ```
 
 ## Service Dependencies
