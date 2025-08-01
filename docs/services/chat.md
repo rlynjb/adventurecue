@@ -5,6 +5,7 @@
 - [Overview](#overview)
 - [Architecture Components](#architecture-components)
 - [Chat Request Flow](#chat-request-flow)
+- [Design Patterns Implementation](#design-patterns-implementation)
 - [Service Dependencies](#service-dependencies)
 - [Key Features](#key-features)
 - [API Endpoint Specification](#api-endpoint-specification)
@@ -45,31 +46,92 @@ Core business logic for conversation management and response generation.
 
 ```mermaid
 graph TD
-    A[Client Request] --> B[netlify/functions/chat.ts]
-    B --> C[Request Validation]
-    C --> D[Load/Create Session]
-    D --> E[netlify/services/chat/chat.ts]
+    A[Client Request] --> B[netlify/functions/chat.ts<br/>🏭 Factory Pattern]
+    B --> C[Request Validation<br/>⚡ Strategy Pattern]
+    C --> D[Load/Create Session<br/>🔄 Singleton Pattern]
+    D --> E[netlify/services/chat/chat.ts<br/>🎭 Facade Pattern]
 
-    E --> F[Generate Embeddings]
-    F --> G[Vector Search]
-    G --> H[Build Context]
-    H --> I[Generate Response]
+    E --> F[Generate Embeddings<br/>🏗️ Builder Pattern]
+    F --> G[Vector Search<br/>🔍 Repository Pattern]
+    G --> H[Build Context<br/>🧩 Composite Pattern]
+    H --> I[Generate Response<br/>🎯 Template Method]
 
-    I --> J{Tools Required?}
-    J -->|Yes| K[Execute Tools]
-    J -->|No| L[Final Response]
-    K --> M[Tool Results]
-    M --> N[Enhanced Response]
+    I --> J{Tools Required?<br/>⚖️ Decision Pattern}
+    J -->|Yes| K[Execute Tools<br/>🔗 Chain of Responsibility]
+    J -->|No| L[Final Response<br/>📋 Command Pattern]
+    K --> M[Tool Results<br/>📊 Observer Pattern]
+    M --> N[Enhanced Response<br/>🔄 Decorator Pattern]
     N --> L
 
-    L --> O[Store in Memory]
-    O --> P[Return to Client]
+    L --> O[Store in Memory<br/>💾 Memento Pattern]
+    O --> P[Return to Client<br/>🚀 Proxy Pattern]
 
     style A fill:#0d47a1,color:#fff
     style B fill:#4a148c,color:#fff
     style E fill:#e65100,color:#fff
     style P fill:#1b5e20,color:#fff
+    style J fill:#d32f2f,color:#fff
+    style K fill:#f57c00,color:#fff
+    style M fill:#388e3c,color:#fff
 ```
+
+## Design Patterns Implementation
+
+### 🏭 Factory Pattern - `chat.ts` Function Handler
+
+Creates appropriate service instances based on request type and configuration.
+
+### ⚡ Strategy Pattern - Request Validation
+
+Dynamically selects validation strategies based on request content and session state.
+
+### 🔄 Singleton Pattern - Session Management
+
+Ensures single session instance per conversation thread for consistency.
+
+### 🎭 Facade Pattern - Chat Service
+
+Provides simplified interface to complex subsystems (embeddings, tools, memory).
+
+### 🏗️ Builder Pattern - Context Building
+
+Incrementally constructs conversation context from multiple data sources.
+
+### 🔍 Repository Pattern - Vector Search
+
+Abstracts data access layer for embeddings and similarity search operations.
+
+### 🧩 Composite Pattern - Context Assembly
+
+Combines different context types (memory, documents, system prompts) into unified structure.
+
+### 🎯 Template Method - Response Generation
+
+Defines algorithmic skeleton for AI response generation with customizable steps.
+
+### 🔗 Chain of Responsibility - Tool Execution
+
+Passes tool requests through chain of handlers until appropriate executor is found.
+
+### 📋 Command Pattern - Response Actions
+
+Encapsulates response operations as objects for execution and potential rollback.
+
+### 📊 Observer Pattern - Status Tracking
+
+Notifies multiple subscribers (client, logging, metrics) of execution progress.
+
+### 🔄 Decorator Pattern - Response Enhancement
+
+Dynamically adds capabilities (formatting, validation, metadata) to base responses.
+
+### 💾 Memento Pattern - Memory Storage
+
+Captures and restores conversation state without exposing internal structure.
+
+### 🚀 Proxy Pattern - Client Interface
+
+Controls access to chat service with additional concerns (rate limiting, logging).
 
 ## Service Dependencies
 
