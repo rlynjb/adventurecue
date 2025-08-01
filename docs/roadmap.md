@@ -26,7 +26,7 @@ This roadmap serves as your source of truth checklist for developing AdventureCu
 
 ### 🏗️ Phase 1: Foundation & RAG Core ✅ (July 10, 2025)
 
-**📄 Primary Documentation**: [`rag-architecture.md`](./rag-architecture.md)
+**📄 Primary Documentation**: [`architecture.md`](./architecture.md)
 
 #### What Was Built - Checklist ✅
 
@@ -90,7 +90,7 @@ This roadmap serves as your source of truth checklist for developing AdventureCu
 
 #### 3A. Architecture Documentation ✅
 
-**📄 Documentation**: [`architecture-overview.md`](./architecture-overview.md)
+**📄 Documentation**: [`architecture.md`](./architecture.md)
 
 - [x] **Client Layer**: React/HTML with status UI components
 - [x] **API Layer**: Netlify Functions with validation
@@ -685,9 +685,9 @@ Transform AdventureCue into a comprehensive RAG Software as a Service platform, 
 
 ### Completed Phases Summary
 
-- ✅ **Phase 1** (July 10, 2025): Foundation & RAG Core - [`rag-architecture.md`](./rag-architecture.md)
+- ✅ **Phase 1** (July 10, 2025): Foundation & RAG Core - [`architecture.md`](./architecture.md)
 - ✅ **Phase 2** (July 22, 2025): Agentic Enhancement - [`agentic-vs-traditional-rag.md`](./agentic-vs-traditional-rag.md)
-- ✅ **Phase 3** (July 27, 2025): System Refactoring - [`architecture-overview.md`](./architecture-overview.md), [`chat-system-diagrams.md`](./chat-system-diagrams.md), [`status-tracking-guide.md`](./status-tracking-guide.md)
+- ✅ **Phase 3** (July 27, 2025): System Refactoring - [`architecture.md`](./architecture.md), [`chat-system-diagrams.md`](./chat-system-diagrams.md), [`status-tracking-guide.md`](./status-tracking-guide.md)
 
 ### Current Focus
 
