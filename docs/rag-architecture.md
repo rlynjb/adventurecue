@@ -70,32 +70,32 @@ adventurecue/
 │       ├── query.ts             # Semantic search endpoint
 │       └── chat.ts              # Chat with memory endpoint
 │
-├── ⚙️ CORE LAYER (Business Logic)
+├── ⚙️ CORE LAYER (Business Logic) - Agentic RAG Pipeline
 │   └── netlify/services/
-│       ├── chat/                # Chat & conversation management
-│       │   ├── chat.ts          # Core chat operations
-│       │   ├── chat-status-tracking.ts  # Real-time status updates
-│       │   ├── chat-status-examples.ts  # Status message templates
-│       │   ├── helpers.ts       # Chat utility functions
-│       │   ├── tools.ts         # Tool execution framework
-│       │   ├── types.ts         # Chat type definitions
-│       │   └── index.ts         # Service exports
-│       ├── embedding/           # Vector embedding operations
-│       │   ├── embedding.ts     # Embedding generation & similarity search
-│       │   ├── types.ts         # Embedding type definitions
-│       │   └── index.ts         # Service exports
-│       ├── ingestion/           # Content processing pipeline
-│       │   ├── ingestion.ts     # Text processing & storage
-│       │   ├── types.ts         # Ingestion type definitions
-│       │   └── index.ts         # Service exports
-│       ├── memory/              # Chat memory & session management
-│       │   ├── types.ts         # Memory type definitions
-│       │   ├── utils.ts         # Session utilities
-│       │   └── index.ts         # Service exports
-│       ├── query/               # Query orchestration
-│       │   ├── query.ts         # Query processing pipeline
-│       │   ├── types.ts         # Query type definitions
-│       │   └── index.ts         # Service exports
+│       ├── chat/                # 🤖 GENERATION & ORCHESTRATION
+│       │   ├── chat.ts          # → Core conversation engine (Generation Agent)
+│       │   ├── chat-status-tracking.ts  # → Real-time agent status (Monitoring)
+│       │   ├── chat-status-examples.ts  # → Status message templates
+│       │   ├── helpers.ts       # → Conversation utilities
+│       │   ├── tools.ts         # → Tool execution framework (Agentic Tools)
+│       │   ├── types.ts         # → Chat & agent type definitions
+│       │   └── index.ts         # → Service exports
+│       ├── embedding/           # 🔍 RETRIEVAL PHASE
+│       │   ├── embedding.ts     # → Vector encoding & similarity search (Retrieval Agent)
+│       │   ├── types.ts         # → Embedding type definitions
+│       │   └── index.ts         # → Service exports
+│       ├── ingestion/           # 📥 KNOWLEDGE INGESTION
+│       │   ├── ingestion.ts     # → Document processing & knowledge base building
+│       │   ├── types.ts         # → Ingestion pipeline types
+│       │   └── index.ts         # → Service exports
+│       ├── memory/              # 🧠 CONVERSATIONAL MEMORY
+│       │   ├── types.ts         # → Session & message schemas (Memory Agent)
+│       │   ├── utils.ts         # → Memory management utilities
+│       │   └── index.ts         # → Service exports
+│       ├── query/               # 🎯 QUERY ORCHESTRATION
+│       │   ├── query.ts         # → RAG pipeline orchestrator (Query Agent)
+│       │   ├── types.ts         # → Query processing types
+│       │   └── index.ts         # → Service exports
 │       └── index.ts             # Core layer exports
 │
 ├── 🔌 INTEGRATION LAYER (External Services)
