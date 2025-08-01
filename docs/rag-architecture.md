@@ -139,6 +139,34 @@ adventurecue/
 │   └── examples/                # Example code & usage
 ```
 
+## Key Terminology
+
+### Agentic RAG Pipeline Terms
+
+- **Chat Agent**: Core conversation orchestrator that manages the complete chat pipeline including memory, tools, and response generation (implemented in `chat/chat.ts`).
+
+- **Tool Execution**: Dynamic invocation of external functions and services based on query analysis, with standardized tool calling interface (implemented in `chat/tools.ts`).
+
+- **Chat Session**: Persistent conversation container that maintains continuity across multiple message exchanges with unique session identifiers (schema in `memory/types.ts`).
+
+- **Status Tracking**: Real-time progress monitoring system that provides step-by-step feedback during chat processing (implemented in `chat/chat-status-tracking.ts`).
+
+- **Chat Message**: Individual conversation units with role-based typing (user, assistant, system) stored with session context (schema in `memory/types.ts`).
+
+- **Session Management**: Utilities for creating, retrieving, and managing chat sessions including session ID generation and title management (implemented in `memory/utils.ts`).
+
+- **Context Augmentation**: Process of combining retrieved documents, conversation history, and tool results into comprehensive prompts for generation.
+
+- **Vector Similarity Search**: Semantic content matching using PostgreSQL pgvector extension to find relevant documents based on embedding distance calculations.
+
+- **Embedding Generation**: Converting text queries into high-dimensional vectors using OpenAI's embedding models for similarity search operations.
+
+- **Chat Status Messages**: Predefined status templates and messages for consistent user feedback during processing steps (implemented in `chat/chat-status-examples.ts`).
+
+- **Multi-Modal Ingestion**: Support for processing different content types through both CLI bulk processing and UI-based real-time ingestion.
+
+- **Session Memory Persistence**: Database storage of conversation history enabling context retrieval across multiple interactions within the same session.
+
 ## Chat Request Flow Diagram
 
 The following diagram shows the complete flow from frontend request to backend response through the chat endpoint with memory and real-time status updates:
