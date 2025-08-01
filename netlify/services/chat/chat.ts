@@ -2,8 +2,8 @@
 
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
 import { ChatStatusMessages, ChatStatusTracker } from "../status";
+import { executeToolCall, openAITools } from "../tools";
 import { callOpenAI } from "./helpers";
-import { executeToolCall, openAITools } from "./tools";
 import { ChatResponse, ChatStatus } from "./types";
 
 /**
