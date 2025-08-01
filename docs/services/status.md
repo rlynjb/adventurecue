@@ -5,6 +5,7 @@
 - [Overview](#overview)
 - [Architecture Components](#architecture-components)
 - [Status Tracking Flow](#status-tracking-flow)
+- [Design Patterns Implementation](#design-patterns-implementation)
 - [Service Dependencies](#service-dependencies)
 - [Key Features](#key-features)
 - [Status Lifecycle](#status-lifecycle)
@@ -53,29 +54,97 @@ Core status tracking functionality for operation monitoring and progress reporti
 
 ```mermaid
 graph TD
-    A[Operation Start] --> B[Status Tracker Creation]
-    B --> C[Callback Registration]
-    C --> D[Step Execution]
-    D --> E[Status Update]
-    E --> F[Event Broadcast]
-    F --> G[Progress Monitoring]
-    G --> H{More Steps?}
+    A[Operation Start] --> B[Status Tracker Creation<br/>🏭 Factory Pattern]
+    B --> C[Callback Registration<br/>📊 Observer Pattern]
+    C --> D[Step Execution<br/>🎯 Template Method]
+    D --> E[Status Update<br/>📋 Command Pattern]
+    E --> F[Event Broadcast<br/>📢 Mediator Pattern]
+    F --> G[Progress Monitoring<br/>🔍 State Pattern]
+    G --> H{More Steps?<br/>⚖️ Strategy Pattern}
     H -->|Yes| D
-    H -->|No| I[Summary Generation]
-    I --> J[Operation Complete]
+    H -->|No| I[Summary Generation<br/>🏗️ Builder Pattern]
+    I --> J[Operation Complete<br/>💾 Memento Pattern]
 
-    K[Error Occurs] --> L[Failure Status]
-    L --> M[Error Data Capture]
+    K[Error Occurs] --> L[Failure Status<br/>🔗 Chain of Responsibility]
+    L --> M[Error Data Capture<br/>📖 Adapter Pattern]
     M --> F
 
-    N[Status Query] --> O[Current State]
-    O --> P[History Retrieval]
+    N[Status Query] --> O[Current State<br/>🚀 Proxy Pattern]
+    O --> P[History Retrieval<br/>🔄 Iterator Pattern]
 
-    style E fill:#1976d2
-    style F fill:#388e3c
-    style L fill:#d32f2f
-    style I fill:#ff8f00
+    Q[Status Cache<br/>💨 Flyweight Pattern] --> O
+    R[Lifecycle Manager<br/>🎭 Singleton Pattern] --> B
+
+    style E fill:#1976d2,color:#fff
+    style F fill:#388e3c,color:#fff
+    style L fill:#d32f2f,color:#fff
+    style I fill:#ff8f00,color:#fff
+    style C fill:#7b1fa2,color:#fff
+    style G fill:#e65100,color:#fff
+    style R fill:#795548,color:#fff
 ```
+
+## Design Patterns Implementation
+
+### 🏭 Factory Pattern - Status Tracker Creation
+
+Creates appropriate status tracker instances based on operation type and configuration requirements.
+
+### 📊 Observer Pattern - Callback Registration
+
+Maintains list of observers (callbacks) that get notified when status changes occur throughout the operation.
+
+### 🎯 Template Method - Step Execution
+
+Defines standard execution algorithm with customizable steps for different operation types and workflows.
+
+### 📋 Command Pattern - Status Updates
+
+Encapsulates status update operations as objects for execution, queuing, undo capabilities, and logging.
+
+### 📢 Mediator Pattern - Event Broadcasting
+
+Centralizes communication between status components, reducing direct dependencies between observers and trackers.
+
+### 🔍 State Pattern - Progress Monitoring
+
+Manages status states (pending, executing, completed, failed) with appropriate behaviors and transitions.
+
+### ⚖️ Strategy Pattern - Step Decision Logic
+
+Dynamically selects appropriate handling strategies based on operation progress and execution context.
+
+### 🏗️ Builder Pattern - Summary Generation
+
+Incrementally constructs comprehensive operation summaries from individual step data and metrics.
+
+### 💾 Memento Pattern - Operation Completion
+
+Captures and preserves final operation state without exposing internal tracker structure for future reference.
+
+### 🔗 Chain of Responsibility - Error Handling
+
+Passes error handling through chain of recovery strategies until appropriate error handler is found.
+
+### 📖 Adapter Pattern - Error Data Capture
+
+Adapts different error formats and sources to uniform status error reporting interface.
+
+### 🚀 Proxy Pattern - Status Queries
+
+Controls access to status data with additional concerns like caching, validation, and security checks.
+
+### 🔄 Iterator Pattern - History Retrieval
+
+Provides sequential access to status history without exposing internal storage structure and organization.
+
+### 💨 Flyweight Pattern - Status Caching
+
+Shares common status data structures to minimize memory usage for frequently accessed status information.
+
+### 🎭 Singleton Pattern - Lifecycle Manager
+
+Ensures single instance of status lifecycle coordinator across all status tracking operations.
 
 ## Service Dependencies
 

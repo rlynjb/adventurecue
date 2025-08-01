@@ -5,6 +5,7 @@
 - [Overview](#overview)
 - [Architecture Components](#architecture-components)
 - [Embedding Generation Flow](#embedding-generation-flow)
+- [Design Patterns Implementation](#design-patterns-implementation)
 - [Service Dependencies](#service-dependencies)
 - [Key Features](#key-features)
 - [Vector Similarity Search](#vector-similarity-search)
@@ -44,19 +45,73 @@ Core embedding functionality for text vectorization and similarity operations.
 
 ```mermaid
 graph TD
-    A[Text Input] --> B[OpenAI API Request]
-    B --> C[text-embedding-ada-002 Model]
-    C --> D[1536-dimensional Vector]
-    D --> E[Return Embedding Array]
+    A[Text Input] --> B[OpenAI API Request<br/>🚀 Proxy Pattern]
+    B --> C[text-embedding-ada-002 Model<br/>🎯 Strategy Pattern]
+    C --> D[1536-dimensional Vector<br/>🏗️ Builder Pattern]
+    D --> E[Return Embedding Array<br/>📋 Command Pattern]
 
-    F[Query Vector] --> G[Database Similarity Search]
-    G --> H[PostgreSQL pgvector Extension]
-    H --> I[Cosine Distance Calculation]
-    I --> J[Ranked Similar Embeddings]
+    F[Query Vector] --> G[Database Similarity Search<br/>🔍 Repository Pattern]
+    G --> H[PostgreSQL pgvector Extension<br/>🔌 Adapter Pattern]
+    H --> I[Cosine Distance Calculation<br/>🧮 Template Method]
+    I --> J[Ranked Similar Embeddings<br/>📊 Observer Pattern]
 
-    style C fill:#1976d2
-    style H fill:#388e3c
+    K[Vector Cache] --> L[Cache Manager<br/>💾 Singleton Pattern]
+    L --> M[Cache Hit/Miss<br/>⚖️ State Pattern]
+    M -->|Hit| N[Return Cached<br/>⚡ Flyweight Pattern]
+    M -->|Miss| B
+
+    style C fill:#1976d2,color:#fff
+    style H fill:#388e3c,color:#fff
+    style L fill:#e65100,color:#fff
+    style I fill:#7b1fa2,color:#fff
+    style J fill:#d32f2f,color:#fff
 ```
+
+## Design Patterns Implementation
+
+### 🚀 Proxy Pattern - OpenAI API Interface
+
+Controls access to OpenAI embedding service with caching, rate limiting, and error handling.
+
+### 🎯 Strategy Pattern - Embedding Model Selection
+
+Dynamically selects appropriate embedding model based on content type and requirements.
+
+### 🏗️ Builder Pattern - Vector Construction
+
+Incrementally builds vector representations from text processing pipeline stages.
+
+### 📋 Command Pattern - Embedding Operations
+
+Encapsulates embedding requests as objects for queuing, retry logic, and batch processing.
+
+### 🔍 Repository Pattern - Vector Storage
+
+Abstracts vector database operations with consistent interface for different storage backends.
+
+### 🔌 Adapter Pattern - Database Integration
+
+Adapts PostgreSQL pgvector operations to service-level embedding interfaces.
+
+### 🧮 Template Method - Similarity Algorithm
+
+Defines standard similarity calculation workflow with customizable distance metrics.
+
+### 📊 Observer Pattern - Result Processing
+
+Notifies multiple handlers (caching, logging, metrics) when similarity searches complete.
+
+### 💾 Singleton Pattern - Cache Management
+
+Ensures single instance of embedding cache manager across application lifecycle.
+
+### ⚖️ State Pattern - Cache Behavior
+
+Manages cache states (empty, loading, ready, expired) with appropriate behaviors.
+
+### ⚡ Flyweight Pattern - Vector Optimization
+
+Shares common vector data structures to minimize memory usage for large embedding sets.
 
 ## Service Dependencies
 

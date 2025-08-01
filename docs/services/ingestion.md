@@ -5,6 +5,7 @@
 - [Overview](#overview)
 - [Architecture Components](#architecture-components)
 - [Ingestion Pipeline Flow](#ingestion-pipeline-flow)
+- [Design Patterns Implementation](#design-patterns-implementation)
 - [API Endpoint Specification](#api-endpoint-specification)
 - [Service Dependencies](#service-dependencies)
 - [Key Features](#key-features)
@@ -67,29 +68,95 @@ Core ingestion functionality for batch content processing and embedding generati
 
 ```mermaid
 graph TD
-    A[HTTP POST Request] --> B[Request Validation]
-    B --> C[JSON Parsing]
-    C --> D[Text Extraction]
-    D --> E[Service Layer Call]
-    E --> F[Content Processing]
-    F --> G[Text Chunking]
-    G --> H[Embedding Generation]
-    H --> I[Database Storage]
-    I --> J[HTTP Response]
+    A[HTTP POST Request] --> B[Request Validation<br/>⚡ Strategy Pattern]
+    B --> C[JSON Parsing<br/>🔧 Factory Pattern]
+    C --> D[Text Extraction<br/>🏗️ Builder Pattern]
+    D --> E[Service Layer Call<br/>🎭 Facade Pattern]
+    E --> F[Content Processing<br/>🎯 Template Method]
+    F --> G[Text Chunking<br/>🧩 Composite Pattern]
+    G --> H[Embedding Generation<br/>🚀 Proxy Pattern]
+    H --> I[Database Storage<br/>🔍 Repository Pattern]
+    I --> J[HTTP Response<br/>📋 Command Pattern]
 
-    K[Directory/Files Input] --> L[File Discovery]
-    L --> M[Rate Limiting Queue]
-    M --> N[File Reading]
+    K[Directory/Files Input] --> L[File Discovery<br/>🔄 Iterator Pattern]
+    L --> M[Rate Limiting Queue<br/>🚦 State Pattern]
+    M --> N[File Reading<br/>📖 Adapter Pattern]
     N --> F
 
-    O[Error Recovery] --> M
+    O[Error Recovery<br/>🔗 Chain of Responsibility] --> M
+    P[Progress Tracking<br/>📊 Observer Pattern] --> F
+    Q[Batch Manager<br/>💾 Singleton Pattern] --> L
 
-    style F fill:#ff8f00
-    style H fill:#1976d2
-    style I fill:#388e3c
-    style O fill:#d32f2f
-    style B fill:#7b1fa2
+    style F fill:#ff8f00,color:#fff
+    style H fill:#1976d2,color:#fff
+    style I fill:#388e3c,color:#fff
+    style O fill:#d32f2f,color:#fff
+    style B fill:#7b1fa2,color:#fff
+    style M fill:#e65100,color:#fff
+    style P fill:#795548,color:#fff
 ```
+
+## Design Patterns Implementation
+
+### ⚡ Strategy Pattern - Request Validation
+
+Dynamically selects validation strategies based on content type and ingestion method (HTTP vs file-based).
+
+### 🔧 Factory Pattern - JSON Processing
+
+Creates appropriate parser instances based on request format and content structure.
+
+### 🏗️ Builder Pattern - Text Extraction
+
+Incrementally constructs processed text content from various input sources and formats.
+
+### 🎭 Facade Pattern - Service Layer
+
+Provides simplified interface to complex ingestion subsystems (validation, processing, storage).
+
+### 🎯 Template Method - Content Processing
+
+Defines standard processing algorithm with customizable steps for different content types.
+
+### 🧩 Composite Pattern - Text Chunking
+
+Treats individual text segments and collections uniformly for processing operations.
+
+### 🚀 Proxy Pattern - Embedding Generation
+
+Controls access to OpenAI API with rate limiting, caching, and error handling.
+
+### 🔍 Repository Pattern - Database Storage
+
+Abstracts database operations with consistent interface for different storage backends.
+
+### 📋 Command Pattern - Response Operations
+
+Encapsulates response generation as objects for execution, queuing, and potential rollback.
+
+### 🔄 Iterator Pattern - File Discovery
+
+Provides sequential access to files in directory structures without exposing internal organization.
+
+### 🚦 State Pattern - Rate Limiting Queue
+
+Manages queue states (idle, processing, throttled, error) with appropriate rate limiting behaviors.
+
+### 📖 Adapter Pattern - File Reading
+
+Adapts different file formats and encodings to uniform text processing interface.
+
+### 🔗 Chain of Responsibility - Error Recovery
+
+Passes error handling through chain of recovery strategies until appropriate handler is found.
+
+### 📊 Observer Pattern - Progress Tracking
+
+Notifies multiple subscribers (logging, metrics, UI) of ingestion progress and status changes.
+
+### 💾 Singleton Pattern - Batch Manager
+
+Ensures single instance of batch processing coordinator across ingestion operations.
 
 ## API Endpoint Specification
 

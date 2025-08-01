@@ -5,6 +5,7 @@
 - [Overview](#overview)
 - [Architecture Components](#architecture-components)
 - [Tool Execution Flow](#tool-execution-flow)
+- [Design Patterns Implementation](#design-patterns-implementation)
 - [Service Dependencies](#service-dependencies)
 - [Supported Tools](#supported-tools)
 - [Tool Integration](#tool-integration)
@@ -58,36 +59,119 @@ Core tool execution functionality for AI function calling and custom operations.
 
 ```mermaid
 graph TD
-    A[Tool Call Request] --> B[Tool Type Recognition]
-    B --> C[Status Update: Executing]
-    C --> D[Context Preparation]
-    D --> E{Tool Type}
-    E -->|web_search_call| F[Web Search Logic]
-    E -->|custom_api_call| G[API Call Logic]
-    E -->|database_lookup| H[Database Query]
-    E -->|unknown| I[Default Handler]
+    A[Tool Call Request] --> B[Tool Type Recognition<br/>🏭 Factory Pattern]
+    B --> C[Status Update: Executing<br/>📊 Observer Pattern]
+    C --> D[Context Preparation<br/>🏗️ Builder Pattern]
+    D --> E{Tool Type<br/>⚖️ Strategy Pattern}
+    E -->|web_search_call| F[Web Search Logic<br/>🎯 Template Method]
+    E -->|custom_api_call| G[API Call Logic<br/>🚀 Proxy Pattern]
+    E -->|database_lookup| H[Database Query<br/>🔍 Repository Pattern]
+    E -->|unknown| I[Default Handler<br/>🔗 Chain of Responsibility]
 
-    F --> J[Search Execution]
-    G --> K[API Request]
-    H --> L[DB Lookup]
-    I --> M[Passthrough]
+    F --> J[Search Execution<br/>📋 Command Pattern]
+    G --> K[API Request<br/>🔌 Adapter Pattern]
+    H --> L[DB Lookup<br/>💾 Memento Pattern]
+    I --> M[Passthrough<br/>🎭 Null Object Pattern]
 
-    J --> N[Result Processing]
+    J --> N[Result Processing<br/>🧩 Composite Pattern]
     K --> N
     L --> N
     M --> N
 
-    N --> O[Status Update: Completed]
-    O --> P[Return Result]
+    N --> O[Status Update: Completed<br/>📢 Mediator Pattern]
+    O --> P[Return Result<br/>📤 Decorator Pattern]
 
-    Q[Error Occurs] --> R[Status Update: Failed]
-    R --> S[Error Propagation]
+    Q[Error Occurs] --> R[Status Update: Failed<br/>🚦 State Pattern]
+    R --> S[Error Propagation<br/>🔄 Iterator Pattern]
 
-    style C fill:#1976d2
-    style O fill:#388e3c
-    style R fill:#d32f2f
-    style E fill:#ff8f00
+    T[Tool Registry<br/>📋 Registry Pattern] --> B
+    U[Context Cache<br/>💨 Flyweight Pattern] --> D
+
+    style C fill:#1976d2,color:#fff
+    style O fill:#388e3c,color:#fff
+    style R fill:#d32f2f,color:#fff
+    style E fill:#ff8f00,color:#fff
+    style T fill:#7b1fa2,color:#fff
+    style U fill:#795548,color:#fff
 ```
+
+## Design Patterns Implementation
+
+### 🏭 Factory Pattern - Tool Type Recognition
+
+Creates appropriate tool executor instances based on tool type and configuration requirements.
+
+### 📊 Observer Pattern - Status Updates
+
+Notifies status tracking system and other observers when tool execution state changes occur.
+
+### 🏗️ Builder Pattern - Context Preparation
+
+Incrementally constructs execution context from user query, background data, and tool-specific parameters.
+
+### ⚖️ Strategy Pattern - Tool Type Selection
+
+Dynamically selects appropriate tool execution strategy based on tool type and runtime conditions.
+
+### 🎯 Template Method - Tool Logic Execution
+
+Defines standard tool execution algorithm with customizable steps for different tool implementations.
+
+### 🚀 Proxy Pattern - API Call Management
+
+Controls access to external APIs with additional concerns like rate limiting, caching, and authentication.
+
+### 🔍 Repository Pattern - Database Operations
+
+Abstracts database access with consistent interface for different query types and storage backends.
+
+### 🔗 Chain of Responsibility - Unknown Tool Handling
+
+Passes unknown tool requests through chain of handlers until appropriate fallback is found.
+
+### 📋 Command Pattern - Tool Execution
+
+Encapsulates tool operations as objects for execution, queuing, retry logic, and result processing.
+
+### 🔌 Adapter Pattern - External Service Integration
+
+Adapts different external service APIs to uniform tool execution interface and response format.
+
+### 💾 Memento Pattern - Database State Capture
+
+Captures database query context and results without exposing internal database structure.
+
+### 🎭 Null Object Pattern - Default Handler
+
+Provides safe fallback behavior for unknown tools without throwing exceptions or breaking execution flow.
+
+### 🧩 Composite Pattern - Result Processing
+
+Treats individual results and result collections uniformly for aggregation and formatting operations.
+
+### 📢 Mediator Pattern - Status Communication
+
+Centralizes communication between tool execution components and status tracking system.
+
+### 📤 Decorator Pattern - Result Enhancement
+
+Dynamically adds capabilities (formatting, validation, metadata) to tool execution results.
+
+### 🚦 State Pattern - Error State Management
+
+Manages error states (retryable, fatal, recovered) with appropriate behaviors and recovery strategies.
+
+### 🔄 Iterator Pattern - Error Propagation
+
+Provides sequential access to error details and recovery options without exposing internal error structure.
+
+### 📋 Registry Pattern - Tool Management
+
+Maintains centralized registry of available tools with dynamic discovery and registration capabilities.
+
+### 💨 Flyweight Pattern - Context Optimization
+
+Shares common context data structures to minimize memory usage for frequently executed tools.
 
 ## Service Dependencies
 
