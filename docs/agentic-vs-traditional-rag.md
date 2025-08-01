@@ -2,84 +2,23 @@
 
 This document compares the flow of your current agentic RAG implementation with traditional RAG approaches, highlighting the autonomous decision-making capabilities of the agentic system.
 
-## Implementation Context and Evolution
+## Current Agentic RAG Architecture
 
-### Previous Discussion Summary
+Your agentic RAG system is implemented in the `netlify/` directory with the following structure:
 
-This agentic RAG implementation evolved through several key discussions and iterations:
+### **Core Services (`netlify/services/`)**
 
-#### **1. Initial Architecture Refactoring**
+- **Chat Service**: Handles agentic conversation flow with autonomous tool selection
+- **Embedding Service**: Manages vector generation and similarity search
+- **Query Service**: Orchestrates the complete RAG pipeline
+- **Memory Service**: Manages chat history and session persistence
 
-- **Goal**: Transform a monolithic RAG system into composable, maintainable components
-- **Outcome**: Modular services for query processing, ingestion, and embedding generation
-- **Key Decision**: Chose composable architecture over framework dependencies like MemGPT for better control and integration
+### **Agentic Implementation (`netlify/functions/query.ts`)**
 
-#### **2. Memory Management Strategy**
-
-- **Question**: Whether to use MemGPT or similar frameworks for chat history and memory management
-- **Recommendation**: Start with custom implementation (Phase 2) for better integration with existing Netlify/Neon/OpenAI stack
-- **Future Path**: Consider MemGPT for advanced features in Phase 3 when complex memory patterns are needed
-
-#### **3. API Choice Evolution**
-
-- **Initial**: Standard OpenAI Chat Completions API
-- **Transition**: Moved to OpenAI Agentic Response API for autonomous decision-making
-- **Reason**: Enable the agent to autonomously decide when to use external tools (web search) vs. relying solely on vector database context
-
-#### **4. Development Roadmap Planning**
-
-- **Phase 1**: ✅ Core RAG pipeline (Complete)
-- **Phase 2**: Chat history & memory management (In Progress)
-- **Phase 3**: MCP tools and advanced tooling
-- **Phase 7**: SaaS transformation (Final development phase)
-- **Maintenance**: Ongoing after SaaS completion
-
-#### **5. Tool Integration Approach**
+The current system uses OpenAI's Response API for autonomous decision-making:
 
 ```typescript
-// Evolution from fixed responses to agentic tool selection
-// Before: Always use vector DB context only
-// After: Agent decides between vector context, web search, or hybrid approach
-const tools = [
-  { type: "web_search_preview" },
-  { type: "web_search_preview_2025_03_11" },
-];
-```
-
-### Key Implementation Decisions
-
-1. **Custom Memory Management**: Preferred over MemGPT for Phase 2 to maintain composable architecture
-2. **Agentic Response API**: Chosen over chat completions for autonomous tool selection
-3. **Multi-tool Configuration**: Support for different web search capabilities
-4. **Error Handling**: Comprehensive fallback strategies for production reliability
-5. **TypeScript Safety**: Strong typing throughout the agentic workflow
-
-### Technical Evolution Journey
-
-#### **From Chat Completions to Agentic Response API**
-
-**Previous Implementation (Chat Completions):**
-
-```typescript
-// Fixed pipeline approach
-const messages = [
-  { role: "system", content: systemPrompt },
-  { role: "user", content: query },
-];
-
-const response = await openai.chat.completions.create({
-  model: "gpt-4o",
-  messages: messages,
-  tools: [
-    /* predefined tools */
-  ],
-});
-```
-
-**Current Implementation (Agentic Response API):**
-
-```typescript
-// Agent-driven approach
+// Current agentic implementation
 const input = [
   { role: "system", content: systemPrompt },
   { role: "user", content: query },
@@ -97,49 +36,16 @@ const response = await openai.responses.create({
 
 // Agent autonomously decides tool usage
 if (response.output?.[0]?.type === "web_search_call") {
-  // Agent chose to search - execute tool and continue
-  input.push(toolCall);
-  const followUpResponse = await openai.responses.create({
-    model: "gpt-4.1",
-    input,
-    tools,
-  });
+  // Execute tool and continue conversation
 }
 ```
 
-#### **Input Format Discovery**
+### **Key Agentic Features**
 
-- **Challenge**: Understanding how to construct input arrays for the responses API
-- **Solution**: Discovered that input can be either string format or array of message objects
-- **Implementation**: Chose array format for better structure and tool integration
-
-#### **Error Handling Evolution**
-
-```typescript
-// Comprehensive error handling for production use
-try {
-  const response = await openai.responses.create(/* ... */);
-
-  // Handle different output types
-  switch (output.type) {
-    case "message": /* extract text content */
-    case "reasoning": /* handle chain-of-thought */
-    case "web_search_call": /* tool execution */
-    default: /* graceful fallbacks */
-  }
-} catch (error) {
-  console.error("Error with responses API:", error);
-  return "I apologize, but I'm having trouble processing your request right now.";
-}
-```
-
-### Architecture Benefits Realized
-
-1. **Autonomous Decision Making**: Agent chooses when to use tools without manual rules
-2. **Real-time Information Access**: Web search integration for current data
-3. **Composable Design**: Easy to add new tools and capabilities
-4. **Production Ready**: Comprehensive error handling and fallbacks
-5. **Future Proof**: Foundation for SaaS transformation in Phase 7
+1. **Autonomous Tool Selection**: Agent decides when to use web search vs vector database
+2. **Multi-step Processing**: Tool execution and result integration
+3. **Error Handling**: Comprehensive fallbacks for production reliability
+4. **Real-time Information**: Web search integration for current data
 
 ## Overall Architecture Comparison
 
