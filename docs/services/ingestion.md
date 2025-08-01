@@ -5,6 +5,7 @@
 - [Overview](#overview)
 - [Architecture Components](#architecture-components)
 - [Ingestion Pipeline Flow](#ingestion-pipeline-flow)
+- [API Endpoint Specification](#api-endpoint-specification)
 - [Service Dependencies](#service-dependencies)
 - [Key Features](#key-features)
 - [Processing Operations](#processing-operations)
@@ -18,6 +19,17 @@
 The ingestion service provides automated content processing capabilities for bulk embedding generation from file-based sources. It handles directory traversal, file reading, content chunking, embedding generation, and database persistence with built-in rate limiting and error recovery.
 
 ## Architecture Components
+
+### 🌐 API Layer: `netlify/functions/ingest.ts`
+
+Serverless function that provides HTTP endpoint for direct text ingestion.
+
+**Responsibilities:**
+
+- HTTP request validation and parsing
+- JSON payload processing
+- Single text content ingestion
+- Response formatting and error handling
 
 ### 🔧 Service Layer: `netlify/services/ingestion/`
 
@@ -55,24 +67,96 @@ Core ingestion functionality for batch content processing and embedding generati
 
 ```mermaid
 graph TD
-    A[Directory/Files Input] --> B[File Discovery]
-    B --> C[Rate Limiting Queue]
-    C --> D[File Reading]
-    D --> E[Content Processing]
-    E --> F[Text Chunking]
-    F --> G[Embedding Generation]
-    G --> H[Database Storage]
-    H --> I[Result Aggregation]
+    A[HTTP POST Request] --> B[Request Validation]
+    B --> C[JSON Parsing]
+    C --> D[Text Extraction]
+    D --> E[Service Layer Call]
+    E --> F[Content Processing]
+    F --> G[Text Chunking]
+    G --> H[Embedding Generation]
+    H --> I[Database Storage]
+    I --> J[HTTP Response]
 
-    J[Direct Text Input] --> K[Content Processing]
-    K --> F
+    K[Directory/Files Input] --> L[File Discovery]
+    L --> M[Rate Limiting Queue]
+    M --> N[File Reading]
+    N --> F
 
-    L[Error Recovery] --> C
+    O[Error Recovery] --> M
 
     style F fill:#ff8f00
-    style G fill:#1976d2
-    style H fill:#388e3c
-    style L fill:#d32f2f
+    style H fill:#1976d2
+    style I fill:#388e3c
+    style O fill:#d32f2f
+    style B fill:#7b1fa2
+```
+
+## API Endpoint Specification
+
+### POST `/api/ingest`
+
+Ingests single text content via HTTP API for immediate processing and embedding generation.
+
+#### Request Format
+
+```json
+{
+  "text": "Content to be processed and embedded"
+}
+```
+
+#### Response Format
+
+**Success (200 OK):**
+
+```json
+{
+  "result": {
+    "id": 123,
+    "success": true
+  }
+}
+```
+
+**Error Responses:**
+
+- `400 Bad Request`: Invalid JSON or missing text field
+- `405 Method Not Allowed`: Non-POST requests
+- `500 Internal Server Error`: Processing failures
+
+#### Usage Examples
+
+```bash
+# Single text ingestion
+curl -X POST https://your-domain/.netlify/functions/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Your content to embed"}'
+```
+
+```mermaid
+graph TD
+    A[HTTP POST Request] --> B[Request Validation]
+    B --> C[JSON Parsing]
+    C --> D[Text Extraction]
+    D --> E[Service Layer Call]
+    E --> F[Content Processing]
+    F --> G[Text Chunking]
+    G --> H[Embedding Generation]
+    H --> I[Database Storage]
+    I --> J[HTTP Response]
+
+    K[Directory/Files Input] --> L[File Discovery]
+    L --> M[Rate Limiting Queue]
+    M --> N[File Reading]
+    N --> F
+
+    O[Error Recovery] --> M
+
+    style F fill:#ff8f00
+    style H fill:#1976d2
+    style I fill:#388e3c
+    style O fill:#d32f2f
+    style B fill:#7b1fa2
 ```
 
 ## Service Dependencies
@@ -192,18 +276,28 @@ graph TD
 
 ### Used By
 
+- **Client Applications**: Direct text embedding via HTTP API
+- **Content Management Systems**: Real-time content processing
 - **CLI Tools**: Bulk content import scripts (`bin/ingest.ts`)
 - **Admin Functions**: Content management operations
 - **Migration Scripts**: Database population workflows
 
 ### Usage Patterns
 
+- **Real-time Ingestion**: Single content items via API endpoint
 - **Initial Setup**: Bulk import of existing content
 - **Content Updates**: Periodic re-ingestion of modified files
 - **Migration Operations**: Database rebuilding and updates
 - **Development Workflows**: Test data population
 
 ## Error Handling
+
+### API Endpoint Errors
+
+- **Request Validation**: JSON parsing and required field validation
+- **Method Restrictions**: Only POST requests accepted
+- **Content Validation**: Text field type and presence checking
+- **HTTP Status Codes**: Standard REST API error responses
 
 ### File-Level Errors
 
