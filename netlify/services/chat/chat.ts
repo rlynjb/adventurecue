@@ -1,23 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
 import { ChatStatusMessages, ChatStatusTracker } from "./chat-status-tracking";
-import { ChatResponse, ChatStatus } from "./types";
-import { executeToolCall } from "./tools";
 import { callOpenAI } from "./helpers";
+import { executeToolCall, openAITools } from "./tools";
+import { ChatResponse, ChatStatus } from "./types";
 
 /**
- * Handles OpenAI chat completion with status tracking
- *
- * Generates an answer to the user's query using OpenAI's chat completion
- * @desc Uses the provided context to generate a response to the user's query with real-time status updates.
- * @param query The user's question
- * @param contextText The context text built from similar embeddings
- * @param onStatusUpdate Optional callback to receive status updates
- * @returns A promise that resolves to a ChatResponse with answer and execution details
+ * Generates an answer to the user's query using OpenAI's model and tracks the status of each step.
+ * It handles tool calls and provides detailed status updates throughout the process.
  */
 export const generateAnswer = async (
-  query: string,
-  contextText: string,
+  userQuery: string,
+  similarEmbeddingContext: string,
   onStatusUpdate?: (status: ChatStatus) => void
 ): Promise<ChatResponse> => {
   const startTime = Date.now();
@@ -25,59 +20,21 @@ export const generateAnswer = async (
   const toolsUsed: string[] = [];
 
   try {
-    /**
-     * Step 1: Call model with user query, context from vector DB, and tools.
-     */
     statusTracker.executing(1, ChatStatusMessages.ANALYZING_QUERY);
 
     const input: any[] = [
-      {
-        role: "system",
-        content: `
-          You're a helpful travel assistant. When recommending places, include the following in a JSON format:
-
-          In intro property, respond with the conversational tone first.
-          And then include all recommendations in places property.
-          End with a friendly offer to help further in outro property.
-
-          {
-            "intro": "string",
-            "places": [
-              {
-                "name": "string",
-                "description": "string",
-                "type": "e.g. Cultural, Nature, Food",
-                "location": "approximate area in the city"
-              }
-            ],
-            "outro": "string"
-          }
-        `,
-      },
-      { role: "user", content: query },
-      { role: "assistant", content: contextText },
-    ];
-
-    const tools: any[] = [
-      { type: "web_search_preview" },
-      { type: "web_search_preview_2025_03_11" },
+      { role: "system", content: TRAVEL_ASSISTANT_SYSTEM_PROMPT },
+      { role: "user", content: userQuery },
+      { role: "assistant", content: similarEmbeddingContext },
     ];
 
     statusTracker.completed(1, ChatStatusMessages.QUERY_PREPARED);
     statusTracker.executing(2, ChatStatusMessages.WAITING_OPENAI);
 
-    const response = await callOpenAI(input, tools);
+    const response = await callOpenAI(input, openAITools);
 
     statusTracker.completed(2, ChatStatusMessages.RECEIVED_RESPONSE);
 
-    /**
-     * Step 2: Model decides to call function(s) – model returns the name and input arguments.
-     */
-    //console.log("tools LLM wants to call -----", response.output);
-
-    /**
-     * Step 3: Execute function code – parse the model's response and handle function calls.
-     */
     const toolCall = response.output?.[0];
     if (toolCall?.type) {
       toolsUsed.push(toolCall.type);
@@ -85,23 +42,15 @@ export const generateAnswer = async (
       // Use switch-based tool execution with status updates
       const toolResult = await executeToolCall(
         toolCall,
-        { query, contextText },
+        { query: userQuery, contextText: similarEmbeddingContext },
         statusTracker
       );
 
-      /**
-       * Step 4: Supply model with results – so it can incorporate them into its final response.
-       */
       statusTracker.executing(4, ChatStatusMessages.SENDING_TOOL_RESULTS);
       input.push(toolResult);
 
-      const followUpResponse = await callOpenAI(input, tools, true);
+      const followUpResponse = await callOpenAI(input, openAITools, true);
       statusTracker.completed(4, ChatStatusMessages.RECEIVED_FINAL);
-
-      /**
-       * Step 5: Model responds – incorporating the result in its output.
-       */
-      //console.log("final response --- ", followUpResponse.output);
       statusTracker.completed(5, ChatStatusMessages.RESPONSE_COMPLETE);
 
       return {
@@ -113,7 +62,6 @@ export const generateAnswer = async (
       };
     }
 
-    //console.log("sufficient response ----", response.output);
     statusTracker.completed(2, ChatStatusMessages.RESPONSE_COMPLETE_NO_TOOLS);
 
     return {
@@ -143,9 +91,9 @@ export const generateAnswer = async (
  * @deprecated Use generateAnswer with status tracking instead
  */
 export const generateSimpleAnswer = async (
-  query: string,
-  contextText: string
+  userQuery: string,
+  similarEnbeddingContext: string
 ): Promise<string> => {
-  const result = await generateAnswer(query, contextText);
+  const result = await generateAnswer(userQuery, similarEnbeddingContext);
   return result.response;
 };
