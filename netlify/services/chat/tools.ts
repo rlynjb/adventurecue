@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ChatStatusMessages, ChatStatusTracker } from "./chat-status-tracking";
+import { ChatStatusMessages, ChatStatusTracker } from "../status";
 
 export const openAITools = [
   { type: "web_search_preview" },

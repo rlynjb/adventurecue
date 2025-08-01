@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
-import { ChatStatusMessages, ChatStatusTracker } from "./chat-status-tracking";
+import { ChatStatusMessages, ChatStatusTracker } from "../status";
 import { callOpenAI } from "./helpers";
 import { executeToolCall, openAITools } from "./tools";
 import { ChatResponse, ChatStatus } from "./types";

@@ -7,7 +7,7 @@ import {
   ChatStatusMessages,
   ChatStatusTracker,
   createStatus,
-} from "./chat-status-tracking";
+} from "./status-tracking";
 
 // Example 1: Basic usage with callback
 export const basicStatusTrackingExample = async () => {
