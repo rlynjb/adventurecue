@@ -122,64 +122,6 @@ adventurecue/
 │   └── examples/                # Example code & usage
 ```
 
-## Client Initialization Pattern
-
-### Singleton Pattern for Shared Clients
-
-**OpenAI Client (`netlify/clients/openai.ts`):**
-
-**Database Client (`netlify/clients/database.ts`):**
-
-## Utility Functions
-
-**File System Utilities (`netlify/utils/file-system.ts`)**
-
-**Rate Limiting Utilities (`netlify/utils/rate-limiting.ts`)**
-
-## Type Definitions
-
-**Chat Types (`netlify/services/chat/types.ts`)**
-
-## Service Layer Implementation
-
-**Embedding Service (`netlify/services/embedding/`):**
-
-**Chat Service (`netlify/services/chat/chat.ts`):**
-
-- Real-time status tracking (`netlify/services/chat/chat-status-tracking.ts`)
-- Status examples (`netlify/services/chat/chat-status-examples.ts`)
-
-**Ingestion Service (`netlify/services/ingestion/`):**
-
-**Query Service (`netlify/services/query/`):**
-
-## CLI Scripts
-
-**Ingestion CLI (`bin/ingest.ts`)**
-
-## Complete RAG Flow
-
-```typescript
-// Current implementation in processQuery()
-const processQuery = async (queryData: QueryRequest): Promise<string> => {
-  const { query, top_k = 5 } = queryData;
-
-  // 1. RETRIEVAL: Convert query to embedding
-  const vector = await generateEmbedding(query);
-
-  // 2. RETRIEVAL: Find similar documents
-  const rows = await findSimilarEmbeddings(vector, top_k);
-
-  // 3. AUGMENTATION: Build context from retrieved docs
-  const contextText = buildContextPrompt(rows);
-
-  // 4. GENERATION: Generate answer with context
-  const answer = await generateAnswer(query, contextText);
-
-  return answer;
-};
-```
-
 ## Query Request Flow Diagram
 
 The following diagram shows the complete flow from frontend request to backend response through each composable function:
