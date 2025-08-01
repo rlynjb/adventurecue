@@ -101,7 +101,7 @@ This roadmap serves as your source of truth checklist for developing AdventureCu
 
 #### 3B. Chat System Visualization ✅
 
-**📄 Documentation**: [`chat-system-diagrams.md`](./chat-system-diagrams.md)
+**📄 Documentation**: [`services/chat.md`](./services/chat.md)
 
 - [x] Enhanced chat system flow diagrams
 - [x] Tool execution decision trees
@@ -111,13 +111,13 @@ This roadmap serves as your source of truth checklist for developing AdventureCu
 
 #### 3C. Status Tracking System ✅
 
-**📄 Documentation**: [`status-tracking-guide.md`](./status-tracking-guide.md)
+**📄 Documentation**: [`architecture.md`](./architecture.md) - Status Service section
 
 - [x] **Status Interfaces**: ChatStatus, ChatResponse types
 - [x] **Progress Tracking**: Step-by-step execution monitoring
 - [x] **Error Handling**: Comprehensive error state management
 - [x] **Timing Metrics**: Performance monitoring and execution timing
-- [x] **Implementation**: `netlify/services/chat/chat-status-tracking.ts`
+- [x] **Implementation**: `netlify/services/status/status-tracking.ts`
 - [x] Server-Sent Events (SSE) preparation for real-time updates
 
 #### 3D. Type System Standardization ✅
@@ -139,7 +139,7 @@ Transform AdventureCue from stateless interactions to a persistent, context-awar
 
 ### ✅ Foundation Completed (Database Schema)
 
-**📄 Primary Documentation**: [`chat-memory-system.md`](./chat-memory-system.md)
+**📄 Primary Documentation**: [`architecture.md`](./architecture.md) - Memory Service section
 
 #### What Was Built - Database Foundation ✅
 
@@ -687,7 +687,7 @@ Transform AdventureCue into a comprehensive RAG Software as a Service platform, 
 
 - ✅ **Phase 1** (July 10, 2025): Foundation & RAG Core - [`architecture.md`](./architecture.md)
 - ✅ **Phase 2** (July 22, 2025): Agentic Enhancement - [`agentic-vs-traditional-rag.md`](./agentic-vs-traditional-rag.md)
-- ✅ **Phase 3** (July 27, 2025): System Refactoring - [`architecture.md`](./architecture.md), [`chat-system-diagrams.md`](./chat-system-diagrams.md), [`status-tracking-guide.md`](./status-tracking-guide.md)
+- ✅ **Phase 3** (July 27, 2025): System Refactoring - [`architecture.md`](./architecture.md)
 
 ### Current Focus
 
