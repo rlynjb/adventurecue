@@ -2,6 +2,15 @@
 
 This document compares agentic RAG architecture with traditional RAG approaches, highlighting the autonomous decision-making capabilities and architectural differences.
 
+## Table of Contents
+
+- [Architecture Overview](#architecture-overview)
+- [Architectural Flow Comparison](#architectural-flow-comparison)
+- [Key Architectural Differences](#key-architectural-differences)
+- [Agentic Agent Decision Matrix](#agentic-agent-decision-matrix)
+- [Architecture Benefits Comparison](#architecture-benefits-comparison)
+- [Architectural Evolution](#architectural-evolution)
+
 ## Architecture Overview
 
 ### **Traditional RAG Architecture**

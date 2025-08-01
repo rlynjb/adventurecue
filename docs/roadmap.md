@@ -5,6 +5,24 @@ This roadmap serves as your source of truth checklist for developing AdventureCu
 **Current Status**: Phase 3 Complete (System Refactoring & Enhancement)  
 **Last Updated**: July 28, 2025
 
+## Table of Contents
+
+- [📋 Roadmap Overview](#-roadmap-overview)
+- [✅ COMPLETED PHASES (Retrospective)](#-completed-phases-retrospective)
+  - [🏗️ Phase 1: Foundation & RAG Core](#️-phase-1-foundation--rag-core--july-10-2025)
+  - [🤖 Phase 2: Agentic Enhancement](#-phase-2-agentic-enhancement--july-22-2025)
+  - [🔧 Phase 3: System Refactoring & Enhancement](#-phase-3-system-refactoring--enhancement--july-27-2025)
+- [🔄 UPCOMING PHASES (Development Plan)](#-upcoming-phases-development-plan)
+  - [🔄 Phase 4: Chat History & Session Management](#-phase-4-chat-history--session-management--next-up)
+  - [🛠️ Phase 5: MCP Tooling & Advanced AI Integration](#️-phase-5-mcp-tooling--advanced-ai-integration)
+  - [🚀 Phase 6: Production MVP & Admin Dashboard](#-phase-6-production-mvp--admin-dashboard)
+  - [🤖 Phase 7: Multi-Agent Systems](#-phase-7-multi-agent-systems)
+  - [🏢 Phase 8: RAG SaaS Platform Development](#-phase-8-rag-saas-platform-development)
+- [🎯 Success Metrics by Phase](#-success-metrics-by-phase)
+- [🔄 Dependencies & Prerequisites](#-dependencies--prerequisites)
+- [💡 Innovation Opportunities](#-innovation-opportunities)
+- [📝 Quick Reference & Progress Tracker](#-quick-reference--progress-tracker)
+
 ---
 
 ## 📋 Roadmap Overview

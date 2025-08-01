@@ -1,5 +1,19 @@
 # Chat Service & Endpoint Documentation
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture Components](#architecture-components)
+- [Chat Request Flow](#chat-request-flow)
+- [Service Dependencies](#service-dependencies)
+- [Key Features](#key-features)
+- [API Endpoint Specification](#api-endpoint-specification)
+- [Processing Pipeline](#processing-pipeline)
+- [Error Handling](#error-handling)
+- [Performance Considerations](#performance-considerations)
+- [Integration Points](#integration-points)
+- [Security & Validation](#security--validation)
+
 ## Overview
 
 The chat system implements an Agentic RAG (Retrieval-Augmented Generation) pipeline that combines conversational AI with semantic search, tool execution, and memory persistence. It provides both a serverless API endpoint and a modular service architecture for managing chat conversations.
