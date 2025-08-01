@@ -49,73 +49,77 @@ The generation phase uses the augmented context to produce AI-generated response
 
 ## Directory Structure
 
+The application follows a layered architecture pattern, with clear separation between presentation, API, business logic, and data layers:
+
 ```
 adventurecue/
-├── bin/
-│   └── ingest.ts                  # CLI ingestion script
-├── data/                          # Data storage directory
-├── db/
-│   ├── index.ts                   # Database connection and setup
-│   └── schema.ts                  # Database schema definitions
-├── docs/                          # Documentation files
-├── examples/                      # Example code and usage
-├── migrations/                    # Database migration files
-│   ├── 0000_enable-pgvector.sql
-│   ├── 0001_create-tables.sql
-│   ├── 0002_create-ivfflat-index.sql
-│   └── meta/                      # Migration metadata
-├── netlify/
-│   ├── clients/                   # External service clients
-│   ├── functions/
-│   │   ├── ingest.ts             # Ingestion endpoint - text processing & embedding storage
-│   │   ├── query.ts              # Query endpoint - semantic search & response generation
-│   │   └── chat.ts               # Query endpoint with real-time status updates & memory
-│   ├── services/
-│   │   ├── chat/
-│   │   │   ├── chat.ts           # Chat service - generateAnswer, buildContextPrompt
-│   │   │   ├── chat-status-tracking.ts  # Real-time status tracking for chat operations
-│   │   │   ├── chat-status-examples.ts  # Example status messages
-│   │   │   ├── memory.ts         # Chat memory functions - session & message management
-│   │   │   ├── types.ts          # Chat-related type definitions
-│   │   │   └── index.ts          # Chat service exports
-│   │   ├── embedding/
-│   │   │   ├── embedding.ts      # Embedding generation & similarity search
-│   │   │   ├── types.ts          # Embedding-related type definitions
-│   │   │   └── index.ts          # Embedding service exports
-│   │   ├── ingestion/
-│   │   │   ├── ingestion.ts      # Text processing & database storage
-│   │   │   ├── types.ts          # Ingestion-related type definitions
-│   │   │   └── index.ts          # Ingestion service exports
-│   │   ├── query/
-│   │   │   ├── query.ts          # Query orchestration & processing
-│   │   │   ├── types.ts          # Query-related type definitions
-│   │   │   └── index.ts          # Query service exports
-│   │   └── index.ts              # Service layer exports
-│   └── utils/                    # Utility functions
-├── public/                       # Static assets
-│   ├── file.svg
-│   ├── globe.svg
-│   ├── next.svg
-│   ├── vercel.svg
-│   └── window.svg
-├── src/
-│   ├── app/
-│   │   ├── favicon.ico
-│   │   ├── globals.css
-│   │   ├── layout.tsx            # Next.js app layout
-│   │   └── page.tsx              # Main page component
-│   ├── components/
-│   │   ├── ingest.tsx            # Ingestion UI component
-│   │   └── query.tsx             # Query UI component
-│   └── lib/                      # Frontend utilities
-└── Configuration Files:
-    ├── drizzle.config.ts         # Drizzle ORM configuration
-    ├── eslint.config.mjs         # ESLint configuration
-    ├── next.config.ts            # Next.js configuration
-    ├── package.json              # Project dependencies
-    ├── postcss.config.mjs        # PostCSS configuration
-    ├── tsconfig.json            # TypeScript configuration
-    └── setup.sh                 # Project setup script
+├── 📱 PRESENTATION LAYER (Frontend)
+│   ├── src/
+│   │   ├── app/                 # Next.js app router
+│   │   │   ├── layout.tsx       # Root layout
+│   │   │   └── page.tsx         # Main page component
+│   │   ├── components/          # React components
+│   │   │   ├── ingest.tsx       # Ingestion UI component
+│   │   │   └── query.tsx        # Query UI component
+│   │   └── lib/                 # Frontend utilities
+│   └── public/                  # Static assets
+│
+├── 🌐 API LAYER (Backend Endpoints)
+│   └── netlify/functions/
+│       ├── ingest.ts            # Text ingestion endpoint
+│       ├── query.ts             # Semantic search endpoint
+│       └── chat.ts              # Chat with memory endpoint
+│
+├── ⚙️ CORE LAYER (Business Logic)
+│   └── netlify/services/
+│       ├── chat/                # Chat & conversation management
+│       │   ├── chat.ts          # Core chat operations
+│       │   ├── chat-status-tracking.ts  # Real-time status updates
+│       │   ├── chat-status-examples.ts  # Status message templates
+│       │   ├── helpers.ts       # Chat utility functions
+│       │   ├── tools.ts         # Tool execution framework
+│       │   ├── types.ts         # Chat type definitions
+│       │   └── index.ts         # Service exports
+│       ├── embedding/           # Vector embedding operations
+│       │   ├── embedding.ts     # Embedding generation & similarity search
+│       │   ├── types.ts         # Embedding type definitions
+│       │   └── index.ts         # Service exports
+│       ├── ingestion/           # Content processing pipeline
+│       │   ├── ingestion.ts     # Text processing & storage
+│       │   ├── types.ts         # Ingestion type definitions
+│       │   └── index.ts         # Service exports
+│       ├── memory/              # Chat memory & session management
+│       │   ├── types.ts         # Memory type definitions
+│       │   ├── utils.ts         # Session utilities
+│       │   └── index.ts         # Service exports
+│       ├── query/               # Query orchestration
+│       │   ├── query.ts         # Query processing pipeline
+│       │   ├── types.ts         # Query type definitions
+│       │   └── index.ts         # Service exports
+│       └── index.ts             # Core layer exports
+│
+├── 🔌 INTEGRATION LAYER (External Services)
+│   ├── netlify/clients/         # External service clients
+│   └── netlify/utils/           # Shared utility functions
+│
+├── 💾 DATA LAYER (Database & Storage)
+│   ├── db/
+│   │   ├── index.ts             # Database connection & setup
+│   │   └── schema.ts            # Schema definitions (embeddings + chat)
+│   ├── migrations/              # Database migrations
+│   │   ├── 0000_enable-pgvector.sql
+│   │   ├── 0001_create-tables.sql
+│   │   ├── 0002_create-ivfflat-index.sql
+│   │   ├── 0003_ancient_blue_blade.sql  # Chat memory tables
+│   │   └── meta/                # Migration metadata
+│   └── data/                    # Source data files
+│
+├── 🛠️ TOOLING LAYER (Development & Operations)
+│   ├── bin/
+│   │   ├── ingest.ts            # CLI ingestion script
+│   │   └── verify-chat-tables.ts # Database verification utility
+│   ├── docs/                    # Documentation
+│   └── examples/                # Example code & usage
 ```
 
 ## Client Initialization Pattern
