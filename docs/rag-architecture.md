@@ -108,14 +108,14 @@ adventurecue/
 │   └── examples/                # Example code & usage
 ```
 
-## Query Request Flow Diagram
+## Chat Request Flow Diagram
 
-The following diagram shows the complete flow from frontend request to backend response through each composable function:
+The following diagram shows the complete flow from frontend request to backend response through the chat endpoint with memory and real-time status updates:
 
 ```mermaid
 graph TD
-    A[Frontend page tsx] --> B[POST netlify functions query]
-    B --> C[handler function]
+    A[Frontend chat interface] --> B[POST netlify functions chat]
+    B --> C[chat handler function]
 
     C --> D{req.method === POST?}
     D -->|No| E[Return 405 Method Not Allowed]
@@ -123,55 +123,60 @@ graph TD
 
     F --> G{JSON valid?}
     G -->|No| H[Return 400 Invalid JSON]
-    G -->|Yes| I[validateRequest body]
+    G -->|Yes| I[validateChatRequest body]
 
     I --> J{validation.isValid?}
     J -->|No| K[Return 400 plus validation error]
-    J -->|Yes| L[processQuery validation data]
+    J -->|Yes| L[processChat validation data]
 
-    L --> M[generateEmbedding query]
-    M --> N[OpenAI API - text-embedding-ada-002]
-    N --> O[Return vector embeddings]
+    L --> M[Initialize chat status tracking]
+    M --> N[Load/create session memory]
+    N --> O[generateEmbedding query]
+    O --> P[OpenAI API - text-embedding-ada-002]
+    P --> Q[Return vector embeddings]
 
-    O --> P[findSimilarEmbeddings vector, top_k]
-    P --> Q[Neon Database - pgvector search]
-    Q --> R[Return similar document chunks]
+    Q --> R[findSimilarEmbeddings vector, top_k]
+    R --> S[Neon Database - pgvector search]
+    S --> T[Return similar document chunks]
 
-    R --> S[buildContextPrompt rows]
-    S --> T[Format context from chunks]
+    T --> U[buildContextPrompt with memory]
+    U --> V[Format context + conversation history]
 
-    T --> U[generateAnswer query, contextText]
-    U --> V[OpenAI API gpt-4 chat completion]
-    V --> W[Return AI generated answer]
+    V --> W[generateAnswer with tools support]
+    W --> X[OpenAI API gpt-4 chat completion]
+    X --> Y[Store message in session memory]
 
-    W --> X[Return Response JSON]
-    X --> Y[Frontend receives answer]
+    Y --> Z[Return Response with status]
+    Z --> AA[Frontend receives chat response]
 
     style A fill:#e1f5fe
     style B fill:#f3e5f5
     style C fill:#fff3e0
     style L fill:#e8f5e8
-    style M fill:#fff9c4
-    style P fill:#fff9c4
-    style S fill:#fff9c4
+    style M fill:#ffeb3b
+    style N fill:#ffeb3b
+    style O fill:#fff9c4
+    style R fill:#fff9c4
     style U fill:#fff9c4
-    style X fill:#e8f5e8
-    style Y fill:#e1f5fe
+    style W fill:#fff9c4
+    style Y fill:#ffeb3b
+    style Z fill:#e8f5e8
+    style AA fill:#e1f5fe
 ```
 
 ## Agentic RAG Architecture Flow
 
-### Query Processing
+### Chat Processing
 
-Frontend → API Layer → Core Services → External APIs → Response
+Frontend → API Layer → Chat Services → Memory & Tools → External APIs → Response
 
 ### Service Orchestration
 
-- **Query Agent** orchestrates the RAG pipeline
+- **Chat Agent** orchestrates the conversation and RAG pipeline
 - **Retrieval Agent** handles vector search operations
-- **Generation Agent** manages conversation and responses
-- **Memory Agent** maintains session context
-- **Tools Framework** enables agentic capabilities
+- **Generation Agent** manages responses with tool execution
+- **Memory Agent** maintains session context and conversation history
+- **Status Tracking** provides real-time operation updates
 
 ## Architecture Benefits
 
