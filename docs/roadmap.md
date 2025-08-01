@@ -122,8 +122,6 @@ This roadmap serves as your source of truth checklist for developing AdventureCu
 
 #### 3D. Type System Standardization ✅
 
-**📄 Documentation**: [`type-system-overview.md`](./type-system-overview.md)
-
 - [x] **Interface Relationships**: Entity relationship diagrams for types
 - [x] **Type Hierarchies**: Inheritance and composition patterns
 - [x] **Data Flow Types**: Request/response type mappings
@@ -689,7 +687,7 @@ Transform AdventureCue into a comprehensive RAG Software as a Service platform, 
 
 - ✅ **Phase 1** (July 10, 2025): Foundation & RAG Core - [`rag-architecture.md`](./rag-architecture.md)
 - ✅ **Phase 2** (July 22, 2025): Agentic Enhancement - [`agentic-vs-traditional-rag.md`](./agentic-vs-traditional-rag.md)
-- ✅ **Phase 3** (July 27, 2025): System Refactoring - [`architecture-overview.md`](./architecture-overview.md), [`chat-system-diagrams.md`](./chat-system-diagrams.md), [`status-tracking-guide.md`](./status-tracking-guide.md), [`type-system-overview.md`](./type-system-overview.md)
+- ✅ **Phase 3** (July 27, 2025): System Refactoring - [`architecture-overview.md`](./architecture-overview.md), [`chat-system-diagrams.md`](./chat-system-diagrams.md), [`status-tracking-guide.md`](./status-tracking-guide.md)
 
 ### Current Focus
 
