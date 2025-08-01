@@ -8,6 +8,31 @@ This document outlines the Retrieval-Augmented Generation (RAG) architecture imp
 
 ## Agentic RAG Pipeline Components
 
+```mermaid
+graph TD
+    A[1. Planning & Reasoning] --> B[2. Retrieval Phase]
+    A --> C[3. Tool Execution]
+    B --> D[4. Augmentation & Memory]
+    C --> D
+    D --> E[5. Generation & Response]
+    E --> F[6. Learning & Adaptation]
+    F --> A
+
+    A1[Query Analysis<br/>Tool Selection<br/>Multi-step Planning] --> A
+    B1[Vector Search<br/>Contextual Retrieval<br/>Relevance Filtering] --> B
+    C1[External APIs<br/>Database Queries<br/>Computational Tools] --> C
+    D1[Document Context<br/>Conversation History<br/>Tool Results] --> D
+    E1[Context-aware Prompting<br/>Tool-augmented Responses<br/>Status Updates] --> E
+    F1[Session Management<br/>Pattern Recognition<br/>Memory Optimization] --> F
+
+    style A fill:#e8f4fd
+    style B fill:#fff2cc
+    style C fill:#f0f8e8
+    style D fill:#fce4ec
+    style E fill:#f3e5f5
+    style F fill:#e0f2f1
+```
+
 ### 1. Planning & Reasoning Phase
 
 The agent analyzes the user's request to determine the optimal approach and required tools. Unlike traditional RAG, agentic systems can:
