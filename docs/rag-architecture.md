@@ -6,32 +6,63 @@
 
 This document outlines the Retrieval-Augmented Generation (RAG) architecture implemented in the AdventureCue project. The system uses a composable, modular approach to handle vector embeddings, similarity search, and AI-generated responses.
 
-## Key Terminology
+## Agentic RAG Pipeline Components
 
-- **Embed**: Generate vector embeddings from text using OpenAI's embedding model
-- **Ingest**: Complete pipeline that chunks text, generates embeddings, and stores them in the database
-- **Query**: Search for similar content and generate AI responses using retrieved context
+### 1. Planning & Reasoning Phase
 
-## Available Endpoints
+The agent analyzes the user's request to determine the optimal approach and required tools. Unlike traditional RAG, agentic systems can:
 
-- **`/.netlify/functions/query`** - Semantic search and response generation
-- **`/.netlify/functions/chat`** - Query with real-time status updates
-- **`/.netlify/functions/ingest`** - Text ingestion through web UI
-- **CLI ingestion** - Bulk file processing via `tsx bin/ingest.ts`
+- **Break down complex queries** into multiple sub-tasks
+- **Decide which tools to use** (search, calculation, external APIs)
+- **Plan multi-step workflows** for comprehensive responses
+- **Maintain conversation context** across multiple interactions
 
-## RAG Pipeline Components
+### 2. Retrieval Phase
 
-### 1. Retrieval Phase
+Enhanced retrieval that goes beyond simple similarity search:
 
-Converts user queries into vector embeddings and searches for similar content in the database using PostgreSQL + pgvector.
+- **Semantic vector search** using PostgreSQL + pgvector for document similarity
+- **Contextual retrieval** that considers conversation history and session memory
+- **Multi-modal retrieval** capability for different content types
+- **Relevance filtering** to ensure retrieved content matches the current context
 
-### 2. Augmentation Phase
+### 3. Tool Execution Phase
 
-Prepares and formats retrieved documents to provide context for the generation model with relevance ranking.
+Agentic systems can execute various tools based on the query requirements:
 
-### 3. Generation Phase
+- **External API calls** for real-time data (weather, news, etc.)
+- **Computational tools** for calculations and data processing
+- **Database queries** for specific information lookup
+- **Custom business logic** execution based on user needs
 
-Uses the augmented context to produce AI-generated responses via OpenAI's chat completion with context-aware prompting.
+### 4. Augmentation & Memory Phase
+
+Intelligent context building that combines multiple information sources:
+
+- **Document context** from retrieved embeddings
+- **Conversation history** from session memory
+- **Tool execution results** from previous steps
+- **System instructions** and user preferences
+- **Real-time status tracking** for transparency
+
+### 5. Generation & Response Phase
+
+AI-powered response generation with agentic capabilities:
+
+- **Context-aware prompting** using OpenAI's chat completion
+- **Tool-augmented responses** incorporating external data
+- **Conversational memory persistence** for future interactions
+- **Status updates** providing real-time feedback to users
+- **Response validation** ensuring quality and relevance
+
+### 6. Learning & Adaptation Phase
+
+Continuous improvement through interaction patterns:
+
+- **Session management** for personalized experiences
+- **Feedback incorporation** for response quality improvement
+- **Pattern recognition** from user interactions
+- **Memory optimization** for efficient context retrieval
 
 ## Directory Structure
 
