@@ -133,32 +133,6 @@ curl -X POST https://your-domain/.netlify/functions/ingest \
   -d '{"text": "Your content to embed"}'
 ```
 
-```mermaid
-graph TD
-    A[HTTP POST Request] --> B[Request Validation]
-    B --> C[JSON Parsing]
-    C --> D[Text Extraction]
-    D --> E[Service Layer Call]
-    E --> F[Content Processing]
-    F --> G[Text Chunking]
-    G --> H[Embedding Generation]
-    H --> I[Database Storage]
-    I --> J[HTTP Response]
-
-    K[Directory/Files Input] --> L[File Discovery]
-    L --> M[Rate Limiting Queue]
-    M --> N[File Reading]
-    N --> F
-
-    O[Error Recovery] --> M
-
-    style F fill:#ff8f00
-    style H fill:#1976d2
-    style I fill:#388e3c
-    style O fill:#d32f2f
-    style B fill:#7b1fa2
-```
-
 ## Service Dependencies
 
 ### External Services
