@@ -18,12 +18,12 @@ graph TB
     E --> F[Learning & Adaptation]
     F --> A
 
-    style A fill:#e8f4fd
-    style B fill:#fff2cc
-    style C fill:#f0f8e8
-    style D fill:#fce4ec
-    style E fill:#f3e5f5
-    style F fill:#e0f2f1
+    style A fill:#1565c0
+    style B fill:#f57f17
+    style C fill:#2e7d32
+    style D fill:#c2185b
+    style E fill:#7b1fa2
+    style F fill:#00695c
 ```
 
 ### 1. Planning & Reasoning Phase
