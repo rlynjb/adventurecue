@@ -7,7 +7,10 @@
 
 "use client";
 
-import { queryWithStreaming, StreamEvent } from "@/lib/packages";
+import {
+  queryWithStreaming,
+  StreamEvent,
+} from "@/lib/packages/sse-streaming-client";
 import { useState } from "react";
 
 export default function ChatExample() {
@@ -62,7 +65,9 @@ export function AdvancedChatExample() {
 
   const handleCustomStreaming = async (userQuery: string) => {
     // Import the StreamProcessor directly for more control
-    const { StreamProcessor } = await import("@/lib/packages");
+    const { StreamProcessor } = await import(
+      "@/lib/packages/sse-streaming-client"
+    );
     const processor = new StreamProcessor();
 
     await processor.processQuery(userQuery, (event: StreamEvent) => {

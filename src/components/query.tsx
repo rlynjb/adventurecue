@@ -1,6 +1,9 @@
 "use client";
 
-import { StreamEvent, StreamProcessor } from "@/lib/packages";
+import {
+  StreamEvent,
+  StreamProcessor,
+} from "@/lib/packages/sse-streaming-client";
 import { useState } from "react";
 
 export interface ChatResult {
