@@ -77,10 +77,7 @@ adventurecue/
 │   └── netlify/services/
 │       ├── chat/                # 🤖 GENERATION & ORCHESTRATION
 │       │   ├── chat.ts          # → Core conversation engine (Generation Agent)
-│       │   ├── chat-status-tracking.ts  # → Real-time agent status (Monitoring)
-│       │   ├── chat-status-examples.ts  # → Status message templates
 │       │   ├── helpers.ts       # → Conversation utilities
-│       │   ├── tools.ts         # → Tool execution framework (Agentic Tools)
 │       │   ├── types.ts
 │       │   └── index.ts
 │       ├── embedding/           # 🔍 RETRIEVAL PHASE
@@ -95,9 +92,20 @@ adventurecue/
 │       │   ├── types.ts
 │       │   ├── utils.ts         # → Memory management utilities
 │       │   └── index.ts
+│       ├── prompts/             # 📝 PROMPT MANAGEMENT
+│       │   ├── prompts.ts       # → System & user prompt templates
+│       │   ├── types.ts
+│       │   └── index.ts
 │       ├── query/               # 🎯 QUERY ORCHESTRATION
 │       │   ├── query.ts         # → RAG pipeline orchestrator (Query Agent)
 │       │   ├── types.ts
+│       │   └── index.ts
+│       ├── status/              # 📊 STATUS TRACKING
+│       │   ├── status-tracking.ts    # → Real-time operation monitoring
+│       │   ├── status-examples.ts    # → Usage examples & templates
+│       │   └── index.ts
+│       ├── tools/               # 🛠️ TOOL EXECUTION
+│       │   ├── tools.ts         # → Tool execution framework (Agentic Tools)
 │       │   └── index.ts
 │       └── index.ts
 │
@@ -131,11 +139,11 @@ adventurecue/
 
 - **Chat Agent**: Core conversation orchestrator that manages the complete chat pipeline including memory, tools, and response generation (implemented in `chat/chat.ts`).
 
-- **Tool Execution**: Dynamic invocation of external functions and services based on query analysis, with standardized tool calling interface (implemented in `chat/tools.ts`).
+- **Tool Execution**: Dynamic invocation of external functions and services based on query analysis, with standardized tool calling interface (implemented in `tools/tools.ts`).
 
 - **Chat Session**: Persistent conversation container that maintains continuity across multiple message exchanges with unique session identifiers (schema in `memory/types.ts`).
 
-- **Status Tracking**: Real-time progress monitoring system that provides step-by-step feedback during chat processing (implemented in `chat/chat-status-tracking.ts`).
+- **Status Tracking**: Real-time progress monitoring system that provides step-by-step feedback during chat processing (implemented in `status/status-tracking.ts`).
 
 - **Chat Message**: Individual conversation units with role-based typing (user, assistant, system) stored with session context (schema in `memory/types.ts`).
 
@@ -147,7 +155,7 @@ adventurecue/
 
 - **Embedding Generation**: Converting text queries into high-dimensional vectors using OpenAI's embedding models for similarity search operations.
 
-- **Chat Status Messages**: Predefined status templates and messages for consistent user feedback during processing steps (implemented in `chat/chat-status-examples.ts`).
+- **Chat Status Messages**: Predefined status templates and messages for consistent user feedback during processing steps (implemented in `status/status-examples.ts`).
 
 - **Multi-Modal Ingestion**: Support for processing different content types through both CLI bulk processing and UI-based real-time ingestion.
 
