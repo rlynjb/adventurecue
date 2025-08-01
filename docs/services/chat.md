@@ -51,10 +51,10 @@ graph TD
     L --> O[Store in Memory]
     O --> P[Return to Client]
 
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style E fill:#fff3e0
-    style P fill:#e8f5e8
+    style A fill:#0d47a1,color:#fff
+    style B fill:#4a148c,color:#fff
+    style E fill:#e65100,color:#fff
+    style P fill:#1b5e20,color:#fff
 ```
 
 ## Service Dependencies
@@ -71,12 +71,13 @@ graph LR
 
     CHAT --> HELPERS[OpenAI Helpers]
 
-    style CHAT fill:#1565c0,color:#fff
-    style PROMPTS fill:#f57f17
-    style STATUS fill:#2e7d32
-    style TOOLS fill:#c2185b
-    style MEMORY fill:#7b1fa2
-    style EMBEDDING fill:#00695c
+    style CHAT fill:#0d47a1,color:#fff
+    style PROMPTS fill:#e65100,color:#fff
+    style STATUS fill:#1b5e20,color:#fff
+    style TOOLS fill:#ad1457,color:#fff
+    style MEMORY fill:#4a148c,color:#fff
+    style EMBEDDING fill:#004d40,color:#fff
+    style HELPERS fill:#3e2723,color:#fff
 ```
 
 ## Key Features
