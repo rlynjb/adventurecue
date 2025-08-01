@@ -34,23 +34,12 @@ export const Query = () => {
   >([{ type: "final", intro: "Hi! What are you in the mood for?" }]);
   const [status, setStatus] = useState<ChatStatus | null>(null);
 
-  /**
-   * @todo
-   * this is working so far,
-   * improve status updates..
-   * create setStatus state and set at the bottom of chat
-   */
-
   const handleQueryRAG = async () => {
     setLoading(true);
     setError(null);
     setMessages((prev) => [...prev, { type: "query", msg: inputData }]);
     setInputData("");
 
-    /**
-     * @todo
-     * display stream events repond objects in the UI
-     */
     try {
       const processor = new StreamProcessor();
       await processor.processQuery(inputData, (event: StreamEvent) => {

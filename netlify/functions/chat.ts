@@ -1,9 +1,6 @@
 import { generateAnswer } from "../services/chat";
 import { ChatResponse, ChatStatus } from "../services/chat/types";
-import {
-  validateRequest,
-  type ValidateRequest,
-} from "../utils/validation";
+import { validateRequest, type ValidateRequest } from "../utils/validation";
 
 /**
  * Enhanced query handler with real-time status updates

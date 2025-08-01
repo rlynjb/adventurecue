@@ -1,7 +1,30 @@
 "use client";
 
-import { ingestText } from "@/lib/api";
 import { useState } from "react";
+
+export interface RAGIngest {
+  text: string;
+  source?: string; // Optional source file name
+}
+
+export const ingestText = async (ingestObj: RAGIngest) => {
+  try {
+    const res = await fetch("/.netlify/functions/ingest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: ingestObj.text,
+        source: ingestObj.source || "pasted-text",
+      }),
+    });
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error ingesting text:", error);
+    throw error;
+  }
+};
 
 export const Ingest = () => {
   const [text, setText] = useState<string>("");

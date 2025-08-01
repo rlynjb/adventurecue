@@ -1,5 +1,3 @@
-import { endpoint } from "@/lib/api";
-
 /**
  * TRAINEE-FRIENDLY STREAMING EXAMPLE
  *
@@ -52,7 +50,7 @@ class StreamConnection {
     userQuery: string
   ): Promise<ReadableStreamDefaultReader<Uint8Array>> {
     // Step 1: Make the HTTP request
-    const response = await fetch(endpoint.queryStream, {
+    const response = await fetch("/.netlify/functions/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
