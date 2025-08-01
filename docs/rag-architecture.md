@@ -9,21 +9,14 @@ This document outlines the Retrieval-Augmented Generation (RAG) architecture imp
 ## Agentic RAG Pipeline Components
 
 ```mermaid
-graph TD
-    A[1. Planning & Reasoning] --> B[2. Retrieval Phase]
+graph LR
+    A[1. Planning & Reasoning] --> B[2. Retrieval]
     A --> C[3. Tool Execution]
     B --> D[4. Augmentation & Memory]
     C --> D
     D --> E[5. Generation & Response]
     E --> F[6. Learning & Adaptation]
     F --> A
-
-    A1[Query Analysis<br/>Tool Selection<br/>Multi-step Planning] --> A
-    B1[Vector Search<br/>Contextual Retrieval<br/>Relevance Filtering] --> B
-    C1[External APIs<br/>Database Queries<br/>Computational Tools] --> C
-    D1[Document Context<br/>Conversation History<br/>Tool Results] --> D
-    E1[Context-aware Prompting<br/>Tool-augmented Responses<br/>Status Updates] --> E
-    F1[Session Management<br/>Pattern Recognition<br/>Memory Optimization] --> F
 
     style A fill:#e8f4fd
     style B fill:#fff2cc
@@ -35,59 +28,27 @@ graph TD
 
 ### 1. Planning & Reasoning Phase
 
-The agent analyzes the user's request to determine the optimal approach and required tools. Unlike traditional RAG, agentic systems can:
-
-- **Break down complex queries** into multiple sub-tasks
-- **Decide which tools to use** (search, calculation, external APIs)
-- **Plan multi-step workflows** for comprehensive responses
-- **Maintain conversation context** across multiple interactions
+Agent analyzes user requests to determine optimal approach and required tools. Breaks down complex queries, selects appropriate tools, and plans multi-step workflows.
 
 ### 2. Retrieval Phase
 
-Enhanced retrieval that goes beyond simple similarity search:
-
-- **Semantic vector search** using PostgreSQL + pgvector for document similarity
-- **Contextual retrieval** that considers conversation history and session memory
-- **Multi-modal retrieval** capability for different content types
-- **Relevance filtering** to ensure retrieved content matches the current context
+Enhanced semantic search using PostgreSQL + pgvector with contextual retrieval considering conversation history and relevance filtering.
 
 ### 3. Tool Execution Phase
 
-Agentic systems can execute various tools based on the query requirements:
-
-- **External API calls** for real-time data (weather, news, etc.)
-- **Computational tools** for calculations and data processing
-- **Database queries** for specific information lookup
-- **Custom business logic** execution based on user needs
+Dynamic invocation of external APIs, computational tools, database queries, and custom business logic based on query requirements.
 
 ### 4. Augmentation & Memory Phase
 
-Intelligent context building that combines multiple information sources:
-
-- **Document context** from retrieved embeddings
-- **Conversation history** from session memory
-- **Tool execution results** from previous steps
-- **System instructions** and user preferences
-- **Real-time status tracking** for transparency
+Intelligent context building combining retrieved documents, conversation history, tool results, and system instructions with real-time status tracking.
 
 ### 5. Generation & Response Phase
 
-AI-powered response generation with agentic capabilities:
-
-- **Context-aware prompting** using OpenAI's chat completion
-- **Tool-augmented responses** incorporating external data
-- **Conversational memory persistence** for future interactions
-- **Status updates** providing real-time feedback to users
-- **Response validation** ensuring quality and relevance
+AI-powered response generation using OpenAI's chat completion with context-aware prompting, tool-augmented responses, and conversational memory persistence.
 
 ### 6. Learning & Adaptation Phase
 
-Continuous improvement through interaction patterns:
-
-- **Session management** for personalized experiences
-- **Feedback incorporation** for response quality improvement
-- **Pattern recognition** from user interactions
-- **Memory optimization** for efficient context retrieval
+Continuous improvement through session management, feedback incorporation, pattern recognition, and memory optimization for personalized experiences.
 
 ## Directory Structure
 
