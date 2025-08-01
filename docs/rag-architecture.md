@@ -9,13 +9,13 @@ This document outlines the Retrieval-Augmented Generation (RAG) architecture imp
 ## Agentic RAG Pipeline Components
 
 ```mermaid
-graph LR
-    A[1. Planning & Reasoning] --> B[2. Retrieval]
-    A --> C[3. Tool Execution]
-    B --> D[4. Augmentation & Memory]
+flowchart LR
+    A["1. Planning & Reasoning"] --> B["2. Retrieval"]
+    A --> C["3. Tool Execution"]
+    B --> D["4. Augmentation & Memory"]
     C --> D
-    D --> E[5. Generation & Response]
-    E --> F[6. Learning & Adaptation]
+    D --> E["5. Generation & Response"]
+    E --> F["6. Learning & Adaptation"]
     F --> A
 
     style A fill:#e8f4fd
