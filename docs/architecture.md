@@ -81,25 +81,25 @@ adventurecue/
 │       │   ├── chat-status-examples.ts  # → Status message templates
 │       │   ├── helpers.ts       # → Conversation utilities
 │       │   ├── tools.ts         # → Tool execution framework (Agentic Tools)
-│       │   ├── types.ts         # → Chat & agent type definitions
-│       │   └── index.ts         # → Service exports
+│       │   ├── types.ts
+│       │   └── index.ts
 │       ├── embedding/           # 🔍 RETRIEVAL PHASE
 │       │   ├── embedding.ts     # → Vector encoding & similarity search (Retrieval Agent)
-│       │   ├── types.ts         # → Embedding type definitions
-│       │   └── index.ts         # → Service exports
+│       │   ├── types.ts
+│       │   └── index.ts
 │       ├── ingestion/           # 📥 KNOWLEDGE INGESTION
 │       │   ├── ingestion.ts     # → Document processing & knowledge base building
-│       │   ├── types.ts         # → Ingestion pipeline types
-│       │   └── index.ts         # → Service exports
+│       │   ├── types.ts
+│       │   └── index.ts
 │       ├── memory/              # 🧠 CONVERSATIONAL MEMORY
-│       │   ├── types.ts         # → Session & message schemas (Memory Agent)
+│       │   ├── types.ts
 │       │   ├── utils.ts         # → Memory management utilities
-│       │   └── index.ts         # → Service exports
+│       │   └── index.ts
 │       ├── query/               # 🎯 QUERY ORCHESTRATION
 │       │   ├── query.ts         # → RAG pipeline orchestrator (Query Agent)
-│       │   ├── types.ts         # → Query processing types
-│       │   └── index.ts         # → Service exports
-│       └── index.ts             # Core layer exports
+│       │   ├── types.ts
+│       │   └── index.ts
+│       └── index.ts
 │
 ├── 🔌 INTEGRATION LAYER (External Services)
 │   ├── netlify/clients/         # External service clients
