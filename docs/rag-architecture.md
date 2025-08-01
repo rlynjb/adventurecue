@@ -246,8 +246,60 @@ Environment validation → File processing → Text chunking → Vector embeddin
 
 ## Technology Stack
 
-- **Frontend**: Next.js with React components
-- **Backend**: Netlify Functions with TypeScript
-- **Database**: PostgreSQL with pgvector extension
-- **AI Services**: OpenAI (embeddings + chat completion)
-- **ORM**: Drizzle with type-safe migrations
+### **Frontend Architecture**
+
+- **Next.js**: React-based framework with app router
+- **TypeScript**: Type-safe development environment
+- **Real-time UI**: Server-Sent Events for live status updates
+- **Component Library**: Modular React components for chat and ingestion
+
+### **Backend Architecture**
+
+- **Netlify Functions**: Serverless API endpoints
+- **TypeScript**: End-to-end type safety
+- **Server-Sent Events**: Real-time status streaming
+- **Modular Services**: Layered business logic architecture
+
+### **AI & ML Stack**
+
+- **OpenAI GPT-4**: Agentic chat completion with tool calling
+- **OpenAI Embeddings**: text-embedding-ada-002 for vector generation
+- **Tool Integration**: Dynamic external API orchestration
+- **Context Management**: Intelligent prompt engineering
+
+### **Database & Vector Search**
+
+- **PostgreSQL**: Primary data storage with ACID compliance
+- **pgvector Extension**: High-performance vector similarity search
+- **Drizzle ORM**: Type-safe database operations and migrations
+- **IVFFlat Indexing**: Optimized vector search performance
+
+### **Memory & Session Management**
+
+- **Chat Sessions**: Persistent conversation containers
+- **Message History**: Role-based conversation storage
+- **Session Persistence**: Cross-request memory continuity
+- **Context Retrieval**: Intelligent conversation history integration
+
+### **Real-time Features**
+
+- **Status Tracking**: Live processing feedback
+- **Streaming Responses**: Server-Sent Events for real-time updates
+- **Progress Monitoring**: Step-by-step operation visibility
+- **Error Handling**: Graceful failure recovery
+
+### **Data Processing Pipeline**
+
+- **CLI Ingestion**: Bulk document processing utilities
+- **UI Ingestion**: Real-time content addition interface
+- **Text Chunking**: Intelligent document segmentation
+- **Vector Generation**: Automated embedding creation
+- **Rate Limiting**: Production-ready processing controls
+
+### **Development & Operations**
+
+- **TypeScript**: Full-stack type safety
+- **Migration System**: Database schema evolution
+- **Validation**: Request/response data integrity
+- **Error Boundaries**: Comprehensive error handling
+- **Monitoring**: Built-in status and health checks
