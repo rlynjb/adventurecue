@@ -11,6 +11,11 @@
 - [Data Models](#data-models)
 - [Vector Storage](#vector-storage)
 - [Connection Management](#connection-management)
+- [Usage & Commands](#usage--commands)
+  - [Database Management Commands](#database-management-commands)
+  - [Common Operations](#common-operations)
+  - [Environment Setup](#environment-setup)
+  - [Monitoring & Debugging](#monitoring--debugging)
 
 ## Overview
 
@@ -131,3 +136,126 @@ The system leverages PostgreSQL's pgvector extension for high-performance simila
 - `NETLIFY_DATABASE_URL`: Neon database connection string
 - Automatic client initialization with error handling
 - Separation of SQL client and ORM layers for flexibility
+
+## Usage & Commands
+
+### Database Management Commands
+
+**Generate Migration Files**:
+
+```bash
+npm run db:generate
+```
+
+Creates new migration files based on schema changes in `db/schema.ts`.
+
+**Apply Migrations**:
+
+```bash
+npm run db:migrate
+```
+
+Executes pending migrations against the database.
+
+**Database Studio (Development)**:
+
+```bash
+npm run db:studio
+```
+
+Opens Drizzle Studio for visual database management and querying.
+
+### Common Operations
+
+**Vector Similarity Search**:
+
+```typescript
+// Find content similar to a query embedding
+const results = await db
+  .select({
+    content: embeddings.content,
+    similarity: sql`1 - (embedding <=> ${queryVector}::vector)`,
+  })
+  .from(embeddings)
+  .orderBy(sql`embedding <=> ${queryVector}::vector`)
+  .limit(5);
+```
+
+**Create Chat Session**:
+
+```typescript
+// Start a new conversation
+const sessionId = crypto.randomUUID();
+await db.insert(chatSessions).values({
+  session_id: sessionId,
+  title: "New Conversation",
+});
+```
+
+**Store Embeddings**:
+
+```typescript
+// Batch insert content embeddings
+await db.insert(embeddings).values([
+  {
+    chunk_index: 0,
+    content: "Text content...",
+    embedding: [0.1, 0.2, ...] // 1536-dim vector
+  }
+]);
+```
+
+### Environment Setup
+
+**Required Environment Variables**:
+
+```bash
+# Neon database connection
+NETLIFY_DATABASE_URL=postgresql://username:password@host/database
+
+# For local development
+DATABASE_URL=postgresql://localhost:5432/adventurecue_dev
+```
+
+**Development Database Setup**:
+
+```bash
+# Install dependencies
+npm install
+
+# Set up environment
+cp .env.example .env
+
+# Run migrations
+npm run db:migrate
+
+# Start development server
+npm run dev
+```
+
+### Monitoring & Debugging
+
+**Check Database Connection**:
+
+```typescript
+import { getDrizzleClient } from "./netlify/clients/database";
+
+try {
+  const db = getDrizzleClient();
+  await db.select().from(embeddings).limit(1);
+  console.log("Database connection successful");
+} catch (error) {
+  console.error("Database connection failed:", error);
+}
+```
+
+**Query Performance Analysis**:
+
+```sql
+-- Check vector index usage
+EXPLAIN ANALYZE
+SELECT content
+FROM embeddings
+ORDER BY embedding <=> '[0.1,0.2,...]'::vector
+LIMIT 10;
+```
