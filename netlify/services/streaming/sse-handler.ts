@@ -13,6 +13,7 @@ import { generateContext } from "../embedding";
  */
 export async function handleStreamingRequest(data: {
   query: string;
+  sessionId?: string;
 }): Promise<Response> {
   // SSE STEP 1: Create a ReadableStream for continuous data transmission
   // This stream allows us to send data chunks incrementally to the client
@@ -55,7 +56,7 @@ export async function handleStreamingRequest(data: {
 }
 
 /**
- * Example streaming implementation with SSE protocol handling
+ * Example streaming implementation with SSE protocol handling and optional memory
  *
  * This function demonstrates the complete SSE lifecycle:
  * 1. Process data asynchronously
@@ -64,7 +65,7 @@ export async function handleStreamingRequest(data: {
  * 4. Properly close the stream
  */
 async function processQueryWithStreaming(
-  data: { query: string },
+  data: { query: string; sessionId?: string },
   onStatusUpdate: (status: ChatStatus) => void,
   controller: ReadableStreamDefaultController
 ) {
@@ -74,10 +75,12 @@ async function processQueryWithStreaming(
 
     // SSE EVENT FLOW: This function will trigger multiple onStatusUpdate calls
     // Each call sends an individual SSE event to the client
+    // Pass sessionId to enable memory functionality if provided
     const result = await generateAnswer(
       data.query,
       contextText,
-      onStatusUpdate // This callback sends real-time status updates via SSE
+      onStatusUpdate, // This callback sends real-time status updates via SSE
+      data.sessionId // Enable memory if sessionId is provided
     );
 
     // SSE FINAL EVENT: Send the complete result to the client

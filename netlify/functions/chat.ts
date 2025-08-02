@@ -5,39 +5,13 @@ import { handleStreamingRequest } from "../services/streaming";
 import { validateRequest, type ValidateRequest } from "../utils/validation";
 
 /**
- * SERVER-SENT EVENTS (SSE) IMPLEMENTATION OVERVIEW
- * ================================================
+ * Enhanced query handler with real-time status updates and memory support
  *
- * This file implements a chat API with two response modes:
- *
- * 1. REGULAR MODE: Standard JSON response after processing completes
- * 2. STREAMING MODE: Real-time updates via Server-Sent Events (SSE)
- *
- * SSE Implementation Details:
- * ---------------------------
- * • Uses ReadableStream to create continuous data flow
- * • Follows SSE protocol: "data: <JSON>\n\n" format
- * • Sets required headers: text/event-stream, no-cache, keep-alive
- * • Sends three types of events: "status", "final", "error"
- * • Properly handles stream lifecycle (start, update, close)
- *
- * Client Usage:
- * -------------
- * const eventSource = new EventSource('/api/chat');
- * eventSource.onmessage = (event) => {
- *   const data = JSON.parse(event.data);
- *   if (data.type === 'status') {
- *     // Handle real-time status updates
- *   } else if (data.type === 'final') {
- *     // Handle final result
- *     eventSource.close();
- *   }
- * };
- */
-
-/**
- * Enhanced query handler with real-time status updates
- * This demonstrates how to use the status tracking functionality
+ * Memory functionality:
+ * - Pass sessionId in request body to enable conversation memory
+ * - Omit sessionId for stateless operation (original behavior)
+ * - Empty string sessionId creates new session automatically
+ * - Existing sessionId continues conversation in that session
  */
 const handler = async (req: Request) => {
   if (req.method !== "POST") {
@@ -79,10 +53,11 @@ const handler = async (req: Request) => {
 };
 
 /**
- * Process query with detailed status tracking
+ * Process query with detailed status tracking and optional memory
  */
 async function processQueryWithStatus(data: {
   query: string;
+  sessionId?: string;
 }): Promise<ChatResponse> {
   const statusUpdates: ChatStatus[] = [];
 
@@ -96,7 +71,13 @@ async function processQueryWithStatus(data: {
   // from your vector database first, then call generateAnswer
   const contextText = await generateContext(data);
 
-  const result = await generateAnswer(data.query, contextText, onStatusUpdate);
+  // Pass sessionId to enable memory functionality if provided
+  const result = await generateAnswer(
+    data.query,
+    contextText,
+    onStatusUpdate,
+    data.sessionId // Enable memory if sessionId is provided
+  );
 
   // Add any additional processing status if needed
   return {

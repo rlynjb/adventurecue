@@ -4,7 +4,7 @@ export interface ChatStatus {
   description: string;
   status: "pending" | "executing" | "completed" | "failed";
   timestamp: number;
-  data?: any;
+  data?: unknown;
 }
 
 export interface ChatResponse {
@@ -13,4 +13,12 @@ export interface ChatResponse {
   steps: ChatStatus[];
   toolsUsed: string[];
   executionTimeMs: number;
+  sessionId?: string; // Add session ID to response
+}
+
+// Memory-enabled chat input
+export interface ChatInput {
+  userQuery: string;
+  sessionId?: string; // Optional - if not provided, new session is created
+  similarEmbeddingContext: string;
 }
