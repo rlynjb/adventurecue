@@ -25,6 +25,7 @@ The Chat Service is the core orchestrator of the Agentic RAG pipeline, responsib
 - Dynamic tool execution based on AI decisions
 - Real-time status tracking and progress reporting
 - Comprehensive error handling and recovery
+- **Chat history management and conversation memory** (New)
 
 ## Architecture
 
@@ -130,13 +131,31 @@ generateAnswer(
 ): Promise<ChatResponse>
 ```
 
+### Memory-Enabled Function: `generateAnswerWithMemory`
+
+```typescript
+generateAnswerWithMemory(
+  input: ChatInput,
+  onStatusUpdate?: (status: ChatStatus) => void
+): Promise<ChatResponse>
+
+interface ChatInput {
+  userQuery: string;
+  sessionId?: string; // Optional - creates new session if not provided
+  similarEmbeddingContext: string;
+}
+```
+
 **Processing Pipeline:**
 
-1. **Query Analysis** - Analyze user intent and context
-2. **Context Integration** - Combine query with retrieved embeddings
-3. **AI Generation** - Generate response using GPT-4
-4. **Tool Execution** - Execute tools if required by AI
-5. **Response Assembly** - Compile final response with metadata
+1. **Session Management** - Create or retrieve chat session
+2. **Query Analysis** - Analyze user intent and context
+3. **History Integration** - Load recent conversation messages
+4. **Context Integration** - Combine query with retrieved embeddings and history
+5. **AI Generation** - Generate response using GPT-4 with conversation context
+6. **Tool Execution** - Execute tools if required by AI
+7. **Response Assembly** - Compile final response with metadata
+8. **Memory Storage** - Save user query and AI response to session
 
 ### Response Structure: `ChatResponse`
 
@@ -147,6 +166,7 @@ interface ChatResponse {
   steps: ChatStatus[];
   toolsUsed: string[];
   executionTimeMs: number;
+  sessionId?: string; // Session ID for memory-enabled responses
 }
 ```
 
@@ -172,17 +192,25 @@ import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
 import { ChatStatusTracker, ChatStatusMessages } from "../status";
 import { executeToolCall, openAITools } from "../tools";
 import { callOpenAI } from "./helpers";
+
+// Memory service integration (New)
+import {
+  createChatSession,
+  saveChatMessage,
+  getRecentMessages,
+} from "../memory";
 ```
 
 ### External Service Coordination
 
-| Service               | Purpose                  | Integration Point                |
-| --------------------- | ------------------------ | -------------------------------- |
-| **Embedding Service** | Context generation       | `generateContext()`              |
-| **Tools Service**     | Dynamic tool execution   | `executeToolCall()`              |
-| **Prompts Service**   | System prompt management | `TRAVEL_ASSISTANT_SYSTEM_PROMPT` |
-| **Status Service**    | Progress tracking        | `ChatStatusTracker`              |
-| **OpenAI Client**     | AI response generation   | `callOpenAI()`                   |
+| Service               | Purpose                  | Integration Point                                                 |
+| --------------------- | ------------------------ | ----------------------------------------------------------------- |
+| **Embedding Service** | Context generation       | `generateContext()`                                               |
+| **Tools Service**     | Dynamic tool execution   | `executeToolCall()`                                               |
+| **Prompts Service**   | System prompt management | `TRAVEL_ASSISTANT_SYSTEM_PROMPT`                                  |
+| **Status Service**    | Progress tracking        | `ChatStatusTracker`                                               |
+| **OpenAI Client**     | AI response generation   | `callOpenAI()`                                                    |
+| **Memory Service**    | Chat history management  | `createChatSession()`, `saveChatMessage()`, `getRecentMessages()` |
 
 ## Status Tracking
 
@@ -427,5 +455,98 @@ async function debugChatService(userQuery: string) {
   console.log("⚡ Execution time:", response.executionTimeMs + "ms");
 
   return response;
+}
+```
+
+## Memory-Enabled Chat Examples
+
+### Start New Conversation
+
+```typescript
+import { generateAnswerWithMemory } from "@/netlify/services/chat";
+import { generateContext } from "@/netlify/services/embedding";
+
+async function startNewConversation(userQuery: string) {
+  const context = await generateContext({
+    query: userQuery,
+    top_k: 5,
+  });
+
+  const response = await generateAnswerWithMemory({
+    userQuery,
+    similarEmbeddingContext: context,
+    // sessionId is optional - creates new session automatically
+  });
+
+  console.log("New conversation started:", response.sessionId);
+  console.log("Response:", response.response);
+
+  return response;
+}
+```
+
+### Continue Existing Conversation
+
+```typescript
+async function continueConversation(sessionId: string, userQuery: string) {
+  const context = await generateContext({
+    query: userQuery,
+    top_k: 5,
+  });
+
+  const response = await generateAnswerWithMemory({
+    userQuery,
+    sessionId, // Provide existing session ID
+    similarEmbeddingContext: context,
+  });
+
+  console.log("Continued conversation:", response.sessionId);
+  return response;
+}
+```
+
+### Conversation with Status Updates
+
+```typescript
+async function chatWithMemoryAndStatus(userQuery: string, sessionId?: string) {
+  const context = await generateContext({ query: userQuery });
+
+  const response = await generateAnswerWithMemory(
+    {
+      userQuery,
+      sessionId,
+      similarEmbeddingContext: context,
+    },
+    (status) => {
+      console.log(`[Step ${status.step}] ${status.description}`);
+    }
+  );
+
+  console.log("Memory-enabled chat completed");
+  console.log("Session ID:", response.sessionId);
+  console.log("Success:", response.success);
+
+  return response;
+}
+```
+
+### Retrieve Conversation History
+
+```typescript
+import { getChatSession } from "@/netlify/services/memory";
+
+async function getConversationHistory(sessionId: string) {
+  const sessionWithMessages = await getChatSession(sessionId);
+
+  if (!sessionWithMessages) {
+    return null;
+  }
+
+  console.log("Session:", sessionWithMessages.title);
+  sessionWithMessages.messages.forEach((msg, index) => {
+    console.log(`${index + 1}. [${msg.role}] ${msg.content}`);
+  });
+
+  return sessionWithMessages;
 }
 ```
