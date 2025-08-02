@@ -1,8 +1,6 @@
-import {
-  findSimilarEmbeddings,
-  generateEmbedding
-} from "../embedding";
-import { buildContextPrompt, generateSimpleAnswer} from "../chat";
+import { generateSimpleAnswer } from "../chat";
+import { findSimilarEmbeddings, generateEmbedding } from "../embedding";
+import { buildContextPrompt } from "../prompts";
 import { QueryRequest } from "./types";
 
 /**

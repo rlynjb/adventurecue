@@ -1,247 +1,201 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getOpenAIClient } from "../../clients";
-import { ChatStatusMessages, ChatStatusTracker } from "./chat-status-tracking";
+import {
+  createChatSession,
+  generateSessionId,
+  generateSessionTitle,
+  getRecentMessages,
+  saveChatMessage,
+} from "../memory";
+import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
+import { ChatStatusMessages, ChatStatusTracker } from "../status";
+import { executeToolCall, openAITools } from "../tools";
+import { callOpenAI } from "./helpers";
 import { ChatResponse, ChatStatus } from "./types";
-import { type EmbeddingRow } from "../embedding/types";
-
-const openai = getOpenAIClient();
 
 /**
- * Makes an OpenAI API call with the given parameters
- */
-const callOpenAI = async (
-  input: any[],
-  tools: any[],
-  store = false
-): Promise<any> => {
-  return await openai.responses.create({
-    model: "gpt-4.1",
-    input,
-    tools,
-    ...(store && { store: true }),
-  });
-};
-
-/**
- * Executes different tool types using a simple switch statement
- */
-const executeToolCall = async (
-  toolCall: any,
-  context: { query: string; contextText: string },
-  statusTracker: ChatStatusTracker
-): Promise<any> => {
-  const toolType = toolCall.type || "unknown";
-
-  // Update status: Starting tool execution
-  statusTracker.executing(3, ChatStatusMessages.EXECUTING_TOOL(toolType), {
-    toolType,
-  });
-
-  console.log(`Executing tool: ${toolCall.type}`);
-
-  try {
-    switch (toolCall.type) {
-      case "web_search_call":
-        console.log("Searching web.....", { query: context.query });
-        statusTracker.executing(3, ChatStatusMessages.WEB_SEARCH_START);
-
-        // Custom web search logic can go here
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate web search delay
-
-        statusTracker.completed(3, ChatStatusMessages.WEB_SEARCH_COMPLETE);
-        return toolCall;
-
-      case "custom_api_call":
-        console.log("Calling custom API.....", {
-          toolCall: toolCall.type,
-          query: context.query,
-        });
-        statusTracker.executing(3, ChatStatusMessages.API_CALL_START);
-
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        statusTracker.completed(3, ChatStatusMessages.API_CALL_COMPLETE);
-        return {
-          ...toolCall,
-          result: `Custom API result for: ${context.query}`,
-          timestamp: Date.now(),
-        };
-
-      case "database_lookup":
-        console.log("Looking up database.....", { query: context.query });
-        statusTracker.executing(3, ChatStatusMessages.DB_LOOKUP_START);
-
-        // Simulate database lookup
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        statusTracker.completed(3, ChatStatusMessages.DB_LOOKUP_COMPLETE);
-        return {
-          ...toolCall,
-          result: `Database result for: ${context.query}`,
-          found: true,
-        };
-
-      default:
-        console.log(
-          `Unknown tool type: ${toolCall.type}, using default behavior`
-        );
-        statusTracker.completed(3, `Using default behavior for ${toolType}`);
-        return toolCall;
-    }
-  } catch (error) {
-    statusTracker.failed(
-      3,
-      ChatStatusMessages.TOOL_FAILED(toolType, String(error)),
-      { error }
-    );
-    throw error;
-  }
-};
-
-/**
- * Formats context text from database results
+ * Generates an answer to the user's query using OpenAI's model and tracks the status of each step.
+ * It handles tool calls and provides detailed status updates throughout the process.
  *
- * @desc Builds a context prompt from the provided embedding rows.
- * @param rows The rows of embedding data to build context from
- * @returns A string representing the context prompt
- */
-export const buildContextPrompt = (rows: EmbeddingRow[]): string => {
-  return rows.map((row, i) => `Context ${i + 1}:\n${row.content}`).join("\n\n");
-};
-
-/**
- * Handles OpenAI chat completion with status tracking
+ * Memory functionality:
+ * - Pass undefined (default): No memory, stateless operation
+ * - Pass empty string ""or null: Creates new session automatically
+ * - Pass existing sessionId: Continues conversation in that session
  *
- * Generates an answer to the user's query using OpenAI's chat completion
- * @desc Uses the provided context to generate a response to the user's query with real-time status updates.
- * @param query The user's question
- * @param contextText The context text built from similar embeddings
- * @param onStatusUpdate Optional callback to receive status updates
- * @returns A promise that resolves to a ChatResponse with answer and execution details
+ * @param userQuery - The user's question or input
+ * @param similarEmbeddingContext - Context from embedding search
+ * @param onStatusUpdate - Optional callback for status updates
+ * @param sessionId - Optional session ID for memory functionality
+ * @returns ChatResponse with optional sessionId for memory-enabled calls
  */
 export const generateAnswer = async (
-  query: string,
-  contextText: string,
-  onStatusUpdate?: (status: ChatStatus) => void
+  userQuery: string,
+  similarEmbeddingContext: string,
+  onStatusUpdate?: (status: ChatStatus) => void,
+  sessionId?: string // Optional: enables memory functionality
 ): Promise<ChatResponse> => {
   const startTime = Date.now();
-  const statusTracker = new ChatStatusTracker(onStatusUpdate);
-  const toolsUsed: string[] = [];
+  const status = new ChatStatusTracker(onStatusUpdate);
+  const tools: string[] = [];
+  let currentSessionId = sessionId;
 
   try {
+    status.executing(1, ChatStatusMessages.ANALYZING_QUERY);
+
     /**
-     * Step 1: Call model with user query, context from vector DB, and tools.
+     * @todo this can be extracted and moved to helpers.ts
      */
-    statusTracker.executing(1, ChatStatusMessages.ANALYZING_QUERY);
+    // Memory functionality: Create session if sessionId provided but doesn't exist
+    if (sessionId !== undefined) {
+      // Create new session if none provided
+      if (!currentSessionId) {
+        currentSessionId = generateSessionId();
+        const title = generateSessionTitle(userQuery);
+
+        await createChatSession({
+          session_id: currentSessionId,
+          title,
+        });
+
+        status.completed(1, "Chat session created");
+      }
+
+      // Save user message to session
+      await saveChatMessage({
+        session_id: currentSessionId,
+        role: "user",
+        content: userQuery,
+      });
+
+      status.completed(1, "Chat history loaded");
+    }
+
+    // Build input with optional conversation history
+    const conversationHistory = currentSessionId
+      ? (await getRecentMessages(currentSessionId, 8)).map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }))
+      : [];
+
+    // up to here
 
     const input: any[] = [
-      {
-        role: "system",
-        content: `
-          You're a helpful travel assistant. When recommending places, include the following in a JSON format:
-
-          In intro property, respond with the conversational tone first.
-          And then include all recommendations in places property.
-          End with a friendly offer to help further in outro property.
-
-          {
-            "intro": "string",
-            "places": [
-              {
-                "name": "string",
-                "description": "string",
-                "type": "e.g. Cultural, Nature, Food",
-                "location": "approximate area in the city"
-              }
-            ],
-            "outro": "string"
-          }
-        `,
-      },
-      { role: "user", content: query },
-      { role: "assistant", content: contextText },
+      { role: "system", content: TRAVEL_ASSISTANT_SYSTEM_PROMPT },
+      ...conversationHistory,
+      { role: "user", content: userQuery },
+      { role: "assistant", content: similarEmbeddingContext },
     ];
 
-    const tools: any[] = [
-      { type: "web_search_preview" },
-      { type: "web_search_preview_2025_03_11" },
-    ];
+    status.completed(1, ChatStatusMessages.QUERY_PREPARED);
+    status.executing(2, ChatStatusMessages.WAITING_OPENAI);
 
-    statusTracker.completed(1, ChatStatusMessages.QUERY_PREPARED);
-    statusTracker.executing(2, ChatStatusMessages.WAITING_OPENAI);
+    const response = await callOpenAI(input, openAITools);
 
-    const response = await callOpenAI(input, tools);
+    status.completed(2, ChatStatusMessages.RECEIVED_RESPONSE);
 
-    statusTracker.completed(2, ChatStatusMessages.RECEIVED_RESPONSE);
-
-    /**
-     * Step 2: Model decides to call function(s) – model returns the name and input arguments.
-     */
-    console.log("tools LLM wants to call -----", response.output);
-
-    /**
-     * Step 3: Execute function code – parse the model's response and handle function calls.
-     */
     const toolCall = response.output?.[0];
     if (toolCall?.type) {
-      toolsUsed.push(toolCall.type);
+      /**
+       * @todo extract tool execution logic to a separate function
+       */
+      tools.push(toolCall.type);
 
-      // Use switch-based tool execution with status updates
       const toolResult = await executeToolCall(
         toolCall,
-        { query, contextText },
-        statusTracker
+        { query: userQuery, contextText: similarEmbeddingContext },
+        status
       );
 
-      /**
-       * Step 4: Supply model with results – so it can incorporate them into its final response.
-       */
-      statusTracker.executing(4, ChatStatusMessages.SENDING_TOOL_RESULTS);
+      status.executing(4, ChatStatusMessages.SENDING_TOOL_RESULTS);
       input.push(toolResult);
+      // tools - up to here
 
-      const followUpResponse = await callOpenAI(input, tools, true);
-      statusTracker.completed(4, ChatStatusMessages.RECEIVED_FINAL);
+      const followUpResponse = await callOpenAI(input, openAITools, true);
+      status.completed(4, ChatStatusMessages.RECEIVED_FINAL);
+      status.completed(5, ChatStatusMessages.RESPONSE_COMPLETE);
+
+      const finalResponse = followUpResponse.output_text ?? "";
 
       /**
-       * Step 5: Model responds – incorporating the result in its output.
+       * @todo maybe this as well
        */
-      console.log("final response --- ", followUpResponse.output);
-      statusTracker.completed(5, ChatStatusMessages.RESPONSE_COMPLETE);
+      // Save assistant response to memory if session exists
+      if (currentSessionId) {
+        await saveChatMessage({
+          session_id: currentSessionId,
+          role: "assistant",
+          content: finalResponse,
+        });
+      }
+      // end here
 
       return {
         success: true,
-        response: followUpResponse.output_text ?? "",
-        steps: statusTracker.getSteps(),
-        toolsUsed,
+        response: finalResponse,
+        steps: status.getSteps(),
+        toolsUsed: tools,
         executionTimeMs: Date.now() - startTime,
+        sessionId: currentSessionId,
       };
     }
 
-    console.log("sufficient response ----", response.output);
-    statusTracker.completed(2, ChatStatusMessages.RESPONSE_COMPLETE_NO_TOOLS);
+    status.completed(2, ChatStatusMessages.RESPONSE_COMPLETE_NO_TOOLS);
+
+    const finalResponse = response.output_text ?? "";
+
+    // Save assistant response to memory if session exists
+    if (currentSessionId) {
+      await saveChatMessage({
+        session_id: currentSessionId,
+        role: "assistant",
+        content: finalResponse,
+      });
+    }
 
     return {
       success: true,
-      response: response.output_text ?? "",
-      steps: statusTracker.getSteps(),
-      toolsUsed,
+      response: finalResponse,
+      steps: status.getSteps(),
+      toolsUsed: tools,
       executionTimeMs: Date.now() - startTime,
+      sessionId: currentSessionId,
     };
   } catch (error) {
-    statusTracker.failed(-1, ChatStatusMessages.ERROR_OCCURRED(String(error)), {
+    status.failed(-1, ChatStatusMessages.ERROR_OCCURRED(String(error)), {
       error,
     });
     return {
       success: false,
       response:
         "I apologize, but I encountered an error while processing your request.",
-      steps: statusTracker.getSteps(),
-      toolsUsed,
+      steps: status.getSteps(),
+      toolsUsed: tools,
       executionTimeMs: Date.now() - startTime,
+      sessionId: currentSessionId,
     };
   }
+};
+
+/**
+ * Memory-enabled wrapper that automatically creates a new session
+ * Use this for conversations that should be remembered
+ * @todo this as well
+ */
+export const generateAnswerWithMemory = async (
+  userQuery: string,
+  similarEmbeddingContext: string,
+  onStatusUpdate?: (status: ChatStatus) => void,
+  existingSessionId?: string
+): Promise<ChatResponse> => {
+  // Pass empty string to enable memory, or use existing session
+  const sessionId = existingSessionId || "";
+  return generateAnswer(
+    userQuery,
+    similarEmbeddingContext,
+    onStatusUpdate,
+    sessionId
+  );
 };
 
 /**
@@ -249,9 +203,9 @@ export const generateAnswer = async (
  * @deprecated Use generateAnswer with status tracking instead
  */
 export const generateSimpleAnswer = async (
-  query: string,
-  contextText: string
+  userQuery: string,
+  similarEnbeddingContext: string
 ): Promise<string> => {
-  const result = await generateAnswer(query, contextText);
+  const result = await generateAnswer(userQuery, similarEnbeddingContext);
   return result.response;
 };

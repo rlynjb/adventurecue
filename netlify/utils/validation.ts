@@ -30,6 +30,8 @@ export const validateRequest = (
     data: {
       query: bodyObj.query,
       top_k: typeof bodyObj.top_k === "number" ? bodyObj.top_k : 5,
+      sessionId:
+        typeof bodyObj.sessionId === "string" ? bodyObj.sessionId : undefined,
     },
   };
 };

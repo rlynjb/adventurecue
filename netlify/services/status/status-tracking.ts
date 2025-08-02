@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { ChatStatus } from "./types";
+import { ChatStatus } from "../chat/types";
 
 /**
  * Creates a status update with standardized structure

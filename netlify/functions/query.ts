@@ -1,9 +1,12 @@
 import { processQuery } from "../services/query";
-import {
-  validateRequest,
-  type ValidateRequest,
-} from "../utils/validation";
+import { validateRequest, type ValidateRequest } from "../utils/validation";
 
+/**
+ * /query handler for processing user queries
+ * @deprecated use /chat endpoint instead
+ * This handler is deprecated and will be removed in future versions.
+ * Use the new query handler with status tracking instead.
+ */
 const handler = async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
