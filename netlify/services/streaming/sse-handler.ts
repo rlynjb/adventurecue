@@ -1,6 +1,6 @@
-import { generateAnswer } from "../services/chat";
-import { ChatStatus } from "../services/chat/types";
-import { generateContext } from "../services/embedding";
+import { generateAnswer } from "../chat";
+import { ChatStatus } from "../chat/types";
+import { generateContext } from "../embedding";
 
 /**
  * Handle streaming responses with Server-Sent Events (SSE)

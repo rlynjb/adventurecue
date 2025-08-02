@@ -1,7 +1,7 @@
 import { generateAnswer } from "../services/chat";
 import { ChatResponse, ChatStatus } from "../services/chat/types";
 import { generateContext } from "../services/embedding";
-import { handleStreamingRequest } from "../utils/sse-streaming";
+import { handleStreamingRequest } from "../services/streaming";
 import { validateRequest, type ValidateRequest } from "../utils/validation";
 
 /**
