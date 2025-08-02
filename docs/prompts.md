@@ -9,6 +9,7 @@
    - [3. Service Integration - Where Can This Service Be Used?](#3-service-integration---where-can-this-service-be-used)
    - [4. API/Endpoint Implementation (Netlify Functions)](#4-apiendpoint-implementation-netlify-functions)
    - [5. Frontend UI Implementation - Consuming the Endpoint](#5-frontend-ui-implementation---consuming-the-endpoint)
+   - [6. Monitoring, Logging & Debugging Setup](#6-monitoring-logging--debugging-setup)
 2. [Development Guidelines](#development-guidelines)
    - [Rollback Strategy Template](#rollback-strategy-template)
 3. [Service Documentation Template](#service-documentation-template)
@@ -27,7 +28,7 @@ This document contains proven prompt templates for successfully building feature
 
 ## Feature Development Workflow
 
-Break down any feature by following these 6 sequential steps:
+Break down any feature by following these 7 sequential steps:
 
 ### 0. Feature Planning & Impact Analysis
 
@@ -319,6 +320,127 @@ Review the [FEATURE_NAME] implementation for basic security considerations.
 Keep security measures practical and aligned with existing patterns.
 ```
 
+### 6. Monitoring, Logging & Debugging Setup
+
+#### Basic Logging Prompt:
+
+```
+Set up basic logging and debugging for my [FEATURE_NAME] feature in Netlify Functions with Neon database.
+
+Context:
+- I'm coming from frontend development background
+- Using Netlify Functions (serverless)
+- Neon PostgreSQL with Drizzle ORM
+- Need to monitor backend changes without always deploying to test
+- Want to catch errors before they break production
+
+Please help me:
+- Add console.log statements that will show up in Netlify Functions logs
+- Set up database query logging to see what SQL is being executed
+- Create error handling that gives me useful debugging information
+- Show me how to test these locally before deploying
+
+Keep it simple and beginner-friendly.
+```
+
+#### Advanced Monitoring Prompt (Recommended):
+
+```
+Implement comprehensive monitoring and debugging for [FEATURE_NAME] in my Netlify + Neon + Drizzle stack.
+
+🔍 **Logging Requirements:**
+- **Function Entry/Exit**: Log when functions start and complete
+- **Database Operations**: Log all SQL queries and their execution time
+- **Error Context**: Capture full error details with request context
+- **Performance Metrics**: Track response times and database query performance
+- **Request Tracking**: Unique request IDs for tracing user flows
+
+📊 **Local Development Setup:**
+- Configure Netlify CLI for local function testing
+- Set up database connection logging in development
+- Create development-specific error handling
+- Enable verbose logging for debugging
+
+🚨 **Error Handling Strategy:**
+- Structured error responses with consistent format
+- Error categorization (validation, database, external API, etc.)
+- Stack trace capture for debugging
+- User-friendly error messages for frontend
+
+🔧 **Monitoring Tools:**
+- Netlify Function logs integration
+- Database performance monitoring
+- Custom health check endpoints
+- Status monitoring for critical operations
+
+⚡ **Testing Without Deployment:**
+- Local function testing with real database
+- Database migration testing
+- API endpoint testing with sample data
+- Error scenario simulation
+
+Please implement this step-by-step with beginner-friendly explanations.
+```
+
+#### Database Monitoring Prompt:
+
+```
+Set up database monitoring and query debugging for Drizzle ORM with Neon.
+
+🗄️ **Database Debugging Setup:**
+- Enable Drizzle query logging to see generated SQL
+- Add query performance timing
+- Log connection status and pool information
+- Monitor slow queries and failed operations
+- Track database migration status
+
+📈 **Performance Monitoring:**
+- Query execution time tracking
+- Connection pool monitoring
+- Database lock detection
+- Memory usage tracking for large result sets
+
+🧪 **Testing Database Changes:**
+- Safe migration testing workflow
+- Rollback verification procedures
+- Data integrity checks after changes
+- Connection testing after schema updates
+
+Show me practical examples I can copy-paste into my code.
+```
+
+#### Local Development & Testing Workflow:
+
+```
+Create a local development workflow that lets me test backend changes before deployment.
+
+🛠️ **Local Setup:**
+- Netlify CLI configuration for function testing
+- Environment variable management for local/production
+- Database connection setup for development
+- Hot reload configuration for rapid testing
+
+🧪 **Testing Strategy:**
+- Unit tests for individual functions
+- Integration tests for database operations
+- API endpoint testing with realistic data
+- Error scenario testing
+
+📝 **Debugging Workflow:**
+- Step-by-step debugging process for when things break
+- How to read Netlify Function logs effectively
+- Database query debugging techniques
+- Performance bottleneck identification
+
+🚀 **Pre-Deployment Checklist:**
+- Local testing verification steps
+- Database migration safety checks
+- API endpoint functionality validation
+- Error handling verification
+
+Make this actionable for someone transitioning from frontend to fullstack development.
+```
+
 ---
 
 ## Development Guidelines
@@ -333,6 +455,105 @@ Write all code adhering to these principles:
 - **Essential focus**: Implement only the essentials - keep it simple
 - **Rollback ready**: Structure changes so they can be easily reverted if needed
 - **Feature flags**: Consider using feature flags for gradual rollouts
+- **Monitor first**: Set up logging and monitoring before deploying changes
+- **Test locally**: Use Netlify CLI and local database connections to test before deployment
+
+### Fullstack Development Best Practices (Frontend → Backend Transition):
+
+#### **1. Local Development Setup**
+
+```bash
+# Install Netlify CLI for local function testing
+npm install -g netlify-cli
+
+# Test functions locally before deployment
+netlify dev
+
+# Run functions with database connection
+netlify dev --live
+```
+
+#### **2. Database Debugging with Drizzle**
+
+```typescript
+// Enable query logging in development
+import { drizzle } from "drizzle-orm/neon-http";
+
+const db = drizzle(client, {
+  logger: process.env.NODE_ENV === "development",
+});
+
+// Add query timing
+const startTime = Date.now();
+const result = await db.select().from(table);
+console.log(`Query took: ${Date.now() - startTime}ms`);
+```
+
+#### **3. Structured Logging for Functions**
+
+```typescript
+// Consistent logging format
+const logger = {
+  info: (message: string, data?: any) =>
+    console.log(`[INFO] ${new Date().toISOString()} - ${message}`, data),
+  error: (message: string, error?: any) =>
+    console.error(`[ERROR] ${new Date().toISOString()} - ${message}`, error),
+  debug: (message: string, data?: any) =>
+    process.env.NODE_ENV === "development" &&
+    console.log(`[DEBUG] ${new Date().toISOString()} - ${message}`, data),
+};
+```
+
+#### **4. Error Handling Pattern**
+
+```typescript
+// Structured error responses
+try {
+  // Your function logic
+  logger.info("Processing request", { userId, action });
+  const result = await someOperation();
+  logger.info("Request completed successfully");
+  return { statusCode: 200, body: JSON.stringify(result) };
+} catch (error) {
+  logger.error("Request failed", { error: error.message, stack: error.stack });
+  return {
+    statusCode: 500,
+    body: JSON.stringify({
+      error: "Internal server error",
+      requestId: Date.now(), // For tracking
+    }),
+  };
+}
+```
+
+#### **5. Pre-Deployment Testing Checklist**
+
+- [ ] Functions run locally with `netlify dev`
+- [ ] Database operations work with real data
+- [ ] Error scenarios tested and logged properly
+- [ ] API responses match expected format
+- [ ] No sensitive data in logs
+- [ ] Performance acceptable (< 10s for complex operations)
+
+### Monitoring Stack Recommendations:
+
+#### **For Netlify Functions:**
+
+- **Built-in Logs**: Netlify Dashboard → Functions → View logs
+- **Real-time Monitoring**: Use `netlify dev` for local testing
+- **Error Alerts**: Set up Netlify notifications for function failures
+
+#### **For Neon Database:**
+
+- **Query Performance**: Neon Dashboard → Monitoring
+- **Connection Monitoring**: Track active connections and pool usage
+- **Slow Query Logs**: Monitor queries taking > 1000ms
+
+#### **For Development Workflow:**
+
+- **Local Testing**: Always test with `netlify dev` before deployment
+- **Database Migrations**: Test on development database first
+- **Rollback Plan**: Keep previous deployment ready for quick rollback
 
 ### Rollback Strategy Template:
 
@@ -450,5 +671,15 @@ Use these placeholder variables in your prompts:
 - `[MIGRATION_DEPENDENCIES]` - Other migrations this depends on
 - `[BREAKING_CHANGES]` - Any potential breaking changes to note
 - `[ROLLBACK_STRATEGY]` - Plan for reverting changes if needed
+
+### Monitoring & Debugging Variables:
+
+- `[LOG_LEVEL]` - Logging level (debug, info, warn, error)
+- `[REQUEST_ID]` - Unique identifier for request tracing
+- `[PERFORMANCE_THRESHOLD]` - Maximum acceptable response time
+- `[ERROR_CATEGORIES]` - Types of errors to handle (validation, database, external)
+- `[MONITORING_ENDPOINT]` - Health check or status endpoint path
+- `[LOCAL_DB_URL]` - Development database connection string
+- `[PROD_DB_URL]` - Production database connection string
 
 This template provides a proven, systematic approach to feature development that maintains code quality, architectural consistency, and developer accessibility.
