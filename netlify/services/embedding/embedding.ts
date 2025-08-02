@@ -1,5 +1,6 @@
 import { getOpenAIClient, getSQLClient } from "../../clients";
-import { type EmbeddingRow } from "./types";
+import { buildContextPrompt } from "../prompts/utils";
+import { type EmbeddingRow, QueryRequest } from "./types";
 
 const openai = getOpenAIClient();
 const sql = getSQLClient();
@@ -41,4 +42,26 @@ export const findSimilarEmbeddings = async (
   `;
 
   return rows as EmbeddingRow[];
+};
+
+/**
+ * Generates context for the given query data.
+ * @param queryData
+ * @returns
+ */
+export const generateContext = async (
+  queryData: QueryRequest
+): Promise<string> => {
+  const { query, top_k = 5 } = queryData;
+
+  // Generate embedding for the user query
+  const vector = await generateEmbedding(query);
+
+  // Find similar embeddings
+  const rows = await findSimilarEmbeddings(vector, top_k);
+
+  // Build context and generate answer
+  const contextText = buildContextPrompt(rows);
+
+  return contextText;
 };

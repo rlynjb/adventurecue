@@ -3,3 +3,8 @@ export interface EmbeddingRow {
   content: string;
   distance: number;
 }
+
+export interface QueryRequest {
+  query: string;
+  top_k?: number;
+}
