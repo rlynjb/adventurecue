@@ -1,5 +1,27 @@
 # Development Prompts Template
 
+## Table of Contents
+
+1. [Feature Development Workflow](#feature-development-workflow)
+   - [1. Database Design, Schema, and Migration](#1-database-design-schema-and-migration)
+   - [2. Define Essential Service Features, Utilities, and Types](#2-define-essential-service-features-utilities-and-types)
+   - [3. Service Integration - Where Can This Service Be Used?](#3-service-integration---where-can-this-service-be-used)
+   - [4. API/Endpoint Implementation (Netlify Functions)](#4-apiendpoint-implementation-netlify-functions)
+   - [5. Frontend UI Implementation - Consuming the Endpoint](#5-frontend-ui-implementation---consuming-the-endpoint)
+2. [Development Guidelines](#development-guidelines)
+   - [Rollback Strategy Template](#rollback-strategy-template)
+3. [Service Documentation Template](#service-documentation-template)
+   - [Documentation Generation Prompt](#documentation-generation-prompt)
+4. [Template Variables Reference](#template-variables-reference)
+   - [Core Application Variables](#core-application-variables)
+   - [Technology Stack Variables](#technology-stack-variables)
+   - [Feature-Specific Variables](#feature-specific-variables)
+   - [Documentation Variables](#documentation-variables)
+   - [Quality Assurance Variables](#quality-assurance-variables)
+   - [Advanced Variables](#advanced-variables)
+
+---
+
 This document contains proven prompt templates for successfully building features in complex applications. These templates follow incremental, safe development with clear boundaries and stopping points.
 
 ## Feature Development Workflow
