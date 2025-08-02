@@ -4,16 +4,16 @@
 
 - [Overview](#overview)
 - [Architecture](#architecture)
-- [Service Flow Diagram](#service-flow-diagram)
+- [Integration Flow Diagram](#integration-flow-diagram)
 - [Design Patterns](#design-patterns)
 - [Core Components](#core-components)
 - [Data Models](#data-models)
-- [Integration Points](#integration-points)
-- [Usage & Commands](#usage--commands)
+- [Service Integration](#service-integration)
+- [Usage](#usage)
 
 ## Overview
 
-The Memory Service provides persistent conversation history management for the AdventureCue chat system. It enables contextual conversations by storing and retrieving chat sessions and messages, integrating seamlessly with the existing RAG pipeline.
+The Memory Service provides persistent conversation history management for the AdventureCue chat system. It enables contextual conversations by storing and retrieving chat sessions and messages, now fully integrated into the main chat pipeline for seamless memory-enabled conversations.
 
 **Location:** `netlify/services/memory/`
 
@@ -23,7 +23,7 @@ The Memory Service provides persistent conversation history management for the A
 - Message persistence and retrieval
 - Conversation context generation
 - Session metadata management
-- Conversation history queries
+- Real-time conversation history integration
 
 ## Architecture
 
@@ -62,49 +62,56 @@ The Memory Service follows a layered architecture with clear separation of conce
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Service Flow Diagram
+## Integration Flow Diagram
 
 ```mermaid
 graph TD
-    A[Memory Service Request] --> B{Operation Type}
+    A[Chat Request] --> B{Memory Enabled?}
 
-    B -->|Create Session| C[Generate Session ID]
-    C --> D[Create Chat Session]
-    D --> E[Return Session Object]
+    B -->|sessionId provided| C[Load Existing Session]
+    B -->|sessionId = ""| D[Create New Session]
+    B -->|sessionId undefined| E[Stateless Operation]
 
-    B -->|Save Message| F[Validate Session ID]
-    F --> G[Insert Message Record]
-    G --> H[Return Message Object]
+    C --> F[Retrieve Recent Messages]
+    D --> G[Generate Session ID & Title]
+    G --> H[Create Session Record]
+    H --> F
 
-    B -->|Get Session| I[Query Session by ID]
-    I --> J[Fetch Associated Messages]
-    J --> K[Combine Session + Messages]
-    K --> L[Return Complete Session]
+    F --> I[Save User Message]
+    I --> J[Build Context with History]
+    E --> K[Build Context without History]
 
-    B -->|Get Recent Messages| M[Query Messages by Session]
-    M --> N[Apply Limit & Ordering]
-    N --> O[Return Message Array]
+    J --> L[Call OpenAI with Context]
+    K --> L
 
-    B -->|Update Session| P[Update Session Metadata]
-    P --> Q[Return Success Status]
+    L --> M[Process AI Response]
+    M --> N{Tool Calls?}
 
-    R[Database Error] --> S[Handle Gracefully]
-    S --> T[Return Error Response]
+    N -->|Yes| O[Execute Tools]
+    O --> P[Enhanced Response]
+    P --> Q[Save Assistant Message]
 
-    style A fill:#1a202c,stroke:#2d3748,color:#ffffff
-    style B fill:#2d3748,stroke:#4a5568,color:#ffffff
-    style C fill:#744210,stroke:#d69e2e,color:#ffffff
-    style D fill:#2c5282,stroke:#3182ce,color:#ffffff
-    style F fill:#2c5282,stroke:#3182ce,color:#ffffff
-    style I fill:#2c5282,stroke:#3182ce,color:#ffffff
-    style M fill:#2c5282,stroke:#3182ce,color:#ffffff
-    style P fill:#2c5282,stroke:#3182ce,color:#ffffff
-    style R fill:#c53030,stroke:#e53e3e,color:#ffffff
-    style E fill:#1b5e20,stroke:#2e7d32,color:#ffffff
-    style H fill:#1b5e20,stroke:#2e7d32,color:#ffffff
-    style L fill:#1b5e20,stroke:#2e7d32,color:#ffffff
-    style O fill:#1b5e20,stroke:#2e7d32,color:#ffffff
-    style Q fill:#1b5e20,stroke:#2e7d32,color:#ffffff
+    N -->|No| R[Direct Response]
+    R --> Q
+
+    E --> S[Return Response]
+    Q --> T[Return Response with Session]
+
+    style A fill:#1a1a2e,stroke:#16213e,color:#ffffff
+    style B fill:#16213e,stroke:#0f172a,color:#ffffff
+    style C fill:#4c1d95,stroke:#5b21b6,color:#ffffff
+    style D fill:#4c1d95,stroke:#5b21b6,color:#ffffff
+    style E fill:#7c2d12,stroke:#9a3412,color:#ffffff
+    style F fill:#155e75,stroke:#0891b2,color:#ffffff
+    style I fill:#155e75,stroke:#0891b2,color:#ffffff
+    style J fill:#166534,stroke:#16a34a,color:#ffffff
+    style K fill:#166534,stroke:#16a34a,color:#ffffff
+    style L fill:#1e40af,stroke:#2563eb,color:#ffffff
+    style M fill:#1e40af,stroke:#2563eb,color:#ffffff
+    style O fill:#ea580c,stroke:#f97316,color:#ffffff
+    style Q fill:#166534,stroke:#16a34a,color:#ffffff
+    style S fill:#15803d,stroke:#22c55e,color:#ffffff
+    style T fill:#15803d,stroke:#22c55e,color:#ffffff
 ```
 
 ## Design Patterns
@@ -133,11 +140,17 @@ graph TD
 - **Purpose**: Reuses database connections across service calls
 - **Benefits**: Efficient resource utilization in serverless environments
 
-### 5. Specification Pattern
+### 6. Observer Pattern
 
-- **Implementation**: Query builders with filtering and ordering logic
-- **Purpose**: Encapsulates query logic for complex data retrieval
-- **Benefits**: Reusable query logic, maintainable data access
+- **Implementation**: Memory operations integrated into chat status tracking
+- **Purpose**: Provides real-time updates during memory operations
+- **Benefits**: Transparent memory activities, debugging capabilities
+
+### 7. Adapter Pattern
+
+- **Implementation**: Memory service integration layer in chat service
+- **Purpose**: Seamlessly integrates memory into existing chat pipeline
+- **Benefits**: Non-intrusive integration, backward compatibility
 
 ## Core Components
 
@@ -226,180 +239,200 @@ type ChatRole = "user" | "assistant" | "system";
 - **assistant**: AI-generated responses and answers
 - **system**: Internal system messages and prompts
 
-## Integration Points
-
-### Database Layer Integration
-
-```typescript
-// Database client dependency
-import { getDrizzleClient } from "../../clients/database";
-import { chatSessions, chatMessages } from "../../../db/schema";
-```
-
-**Integration Strategy:**
-
-- Singleton database client for connection efficiency
-- Schema-first approach with type-safe operations
-- Foreign key relationships for data integrity
+## Service Integration
 
 ### Chat Service Integration
 
+The Memory Service is now **fully integrated** into the main chat service, providing seamless conversation persistence without requiring code changes for existing implementations.
+
+**Integration Location:** `netlify/services/chat/chat.ts`
+
+**Integration Method:**
+
+- **Backward Compatible**: Existing `generateAnswer()` calls work unchanged
+- **Memory Enabled**: Optional `sessionId` parameter activates memory features
+- **Automatic Management**: Session creation, message persistence, and context retrieval handled transparently
+
+**Function Signatures:**
+
 ```typescript
-// Memory service usage in chat pipeline
-import {
-  createChatSession,
-  saveChatMessage,
-  getRecentMessages,
-} from "../memory";
+// Original function with optional memory
+generateAnswer(
+  userQuery: string,
+  similarEmbeddingContext: string,
+  onStatusUpdate?: (status: ChatStatus) => void,
+  sessionId?: string // New: enables memory when provided
+): Promise<ChatResponse>
+
+// Convenience function for memory-enabled conversations
+generateAnswerWithMemory(
+  userQuery: string,
+  similarEmbeddingContext: string,
+  onStatusUpdate?: (status: ChatStatus) => void,
+  existingSessionId?: string
+): Promise<ChatResponse>
 ```
 
-**Integration Points:**
+**Memory Behavior:**
 
-- Session creation for new conversations
-- Message persistence during chat processing
-- Context retrieval for conversation continuity
+- `sessionId` **undefined**: Stateless operation (original behavior)
+- `sessionId` **empty string** `""`: Creates new session automatically
+- `sessionId` **with value**: Continues existing conversation
 
-### Service Dependencies
+**Integration Benefits:**
 
-| Dependency             | Purpose          | Integration Method      |
-| ---------------------- | ---------------- | ----------------------- |
-| **Database Client**    | Data persistence | `getDrizzleClient()`    |
-| **Schema Definitions** | Type safety      | Import from `db/schema` |
-| **Query Builder**      | Data operations  | Drizzle ORM methods     |
+- **Zero Migration**: Existing code continues to work without changes
+- **Opt-in Memory**: Enable memory by simply passing a sessionId
+- **Transparent Operations**: Memory saving/loading handled automatically
+- **Status Integration**: Memory operations included in existing status tracking
 
-## Usage & Commands
+### Database Integration
 
-### Basic Session Management
+**Tables Used:**
 
-```typescript
-import { createChatSession, getChatSession } from "@/netlify/services/memory";
+- `chat_sessions`: Session metadata and lifecycle management
+- `chat_messages`: Individual message storage with role-based organization
 
-// Create a new chat session
-const session = await createChatSession({
-  session_id: "unique-session-id",
-  title: "Travel Planning Discussion",
-});
+**Connection Management:**
 
-// Retrieve session with all messages
-const fullSession = await getChatSession("unique-session-id");
-console.log(`Session: ${fullSession?.title}`);
-console.log(`Messages: ${fullSession?.messages.length}`);
+- Leverages existing database client singleton pattern
+- Efficient connection reuse across serverless function invocations
+- Integrated with existing migration and schema management
+
+## Usage
+
+### Terminal Commands
+
+**Database Management:**
+
+```bash
+# Generate migration for chat tables (if needed)
+npm run db:generate
+
+# Apply chat table migrations
+npm run db:migrate
+
+# Open database studio to view chat sessions
+npm run db:studio
 ```
 
-### Message Operations
+**Development & Testing:**
 
-```typescript
-import { saveChatMessage, getRecentMessages } from "@/netlify/services/memory";
+```bash
+# Start development server with memory-enabled chat
+npm run dev
 
-// Save user message
-await saveChatMessage({
-  session_id: "unique-session-id",
-  role: "user",
-  content: "What are the best attractions in San Francisco?",
-});
+# Test chat endpoints with memory functionality
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Tell me about San Francisco", "sessionId": ""}'
 
-// Save assistant response
-await saveChatMessage({
-  session_id: "unique-session-id",
-  role: "assistant",
-  content: "Here are the top attractions in San Francisco...",
-});
-
-// Get recent conversation context
-const recentMessages = await getRecentMessages("unique-session-id", 10);
-console.log(`Recent messages: ${recentMessages.length}`);
+# Continue conversation with existing session
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What about Golden Gate Bridge?", "sessionId": "chat_abc123"}'
 ```
 
-### Utility Functions
+### Implementation Guide
+
+#### 1. Basic Memory-Enabled Chat
 
 ```typescript
-import {
-  generateSessionId,
-  generateSessionTitle,
-  isValidChatRole,
-} from "@/netlify/services/memory";
-
-// Generate unique session identifier
-const sessionId = generateSessionId();
-console.log(`New session ID: ${sessionId}`);
-
-// Create session title from user input
-const title = generateSessionTitle("I want to plan a trip to San Francisco");
-console.log(`Generated title: ${title}`);
-
-// Validate message role
-if (isValidChatRole("user")) {
-  console.log("Valid role for message");
-}
-```
-
-### Integration with Chat Service
-
-```typescript
-import { generateAnswerWithMemory } from "@/netlify/services/chat";
+import { generateAnswer } from "@/netlify/services/chat";
 import { generateContext } from "@/netlify/services/embedding";
 
 // Start new conversation with memory
-async function startConversationWithMemory(userQuery: string) {
+async function startNewConversation(userQuery: string) {
   const context = await generateContext({ query: userQuery });
 
-  const response = await generateAnswerWithMemory({
+  // Pass empty string to enable memory with auto-session creation
+  const response = await generateAnswer(
     userQuery,
-    similarEmbeddingContext: context,
-    // sessionId omitted - new session created automatically
-  });
+    context,
+    undefined,
+    "" // Creates new session
+  );
 
-  return {
-    sessionId: response.sessionId,
-    response: response.response,
-    success: response.success,
-  };
+  console.log("New session ID:", response.sessionId);
+  return response;
 }
 
 // Continue existing conversation
 async function continueConversation(sessionId: string, userQuery: string) {
   const context = await generateContext({ query: userQuery });
 
-  const response = await generateAnswerWithMemory({
+  const response = await generateAnswer(
     userQuery,
-    sessionId, // Use existing session
-    similarEmbeddingContext: context,
-  });
+    context,
+    undefined,
+    sessionId // Use existing session
+  );
 
   return response;
 }
 ```
 
-### Advanced Query Patterns
+#### 2. Using the Convenience Function
 
 ```typescript
-// Custom message filtering
-async function getConversationSummary(sessionId: string) {
-  const session = await getChatSession(sessionId);
+import { generateAnswerWithMemory } from "@/netlify/services/chat";
 
-  if (!session) return null;
+// Automatically create new session
+async function simpleMemoryChat(userQuery: string) {
+  const context = await generateContext({ query: userQuery });
 
-  const userMessages = session.messages.filter((msg) => msg.role === "user");
-  const assistantMessages = session.messages.filter(
-    (msg) => msg.role === "assistant"
+  const response = await generateAnswerWithMemory(
+    userQuery,
+    context
+    // sessionId automatically managed
   );
 
-  return {
-    title: session.title,
-    totalMessages: session.messages.length,
-    userMessages: userMessages.length,
-    assistantMessages: assistantMessages.length,
-    firstMessage: session.messages[0]?.content,
-    lastMessage: session.messages[session.messages.length - 1]?.content,
-  };
+  return response;
 }
 
-// Conversation context builder
-async function buildConversationContext(
-  sessionId: string,
-  contextSize: number = 8
-) {
-  const recentMessages = await getRecentMessages(sessionId, contextSize);
+// Continue with existing session
+async function continueSimpleChat(sessionId: string, userQuery: string) {
+  const context = await generateContext({ query: userQuery });
+
+  const response = await generateAnswerWithMemory(
+    userQuery,
+    context,
+    undefined,
+    sessionId
+  );
+
+  return response;
+}
+```
+
+#### 3. Memory Operations
+
+```typescript
+import {
+  getChatSession,
+  getRecentMessages,
+  createChatSession,
+  saveChatMessage,
+} from "@/netlify/services/memory";
+
+// Retrieve conversation history
+async function getConversationHistory(sessionId: string) {
+  const session = await getChatSession(sessionId);
+
+  if (!session) {
+    console.log("Session not found");
+    return null;
+  }
+
+  console.log(`Session: ${session.title}`);
+  console.log(`Messages: ${session.messages.length}`);
+
+  return session;
+}
+
+// Get recent context for AI
+async function getConversationContext(sessionId: string) {
+  const recentMessages = await getRecentMessages(sessionId, 10);
 
   return recentMessages.map((msg) => ({
     role: msg.role,
@@ -407,39 +440,162 @@ async function buildConversationContext(
     timestamp: msg.created_at,
   }));
 }
+
+// Manual session management
+async function createNewSession(title: string) {
+  const sessionId = `chat_${Date.now()}_${Math.random()
+    .toString(36)
+    .substring(2, 8)}`;
+
+  const session = await createChatSession({
+    session_id: sessionId,
+    title,
+  });
+
+  return session;
+}
 ```
 
-### Error Handling Patterns
+#### 4. API Endpoint Integration
 
 ```typescript
-// Robust session retrieval
-async function safeGetSession(sessionId: string) {
+// Example API endpoint with memory support
+export async function POST(request: Request) {
   try {
-    const session = await getChatSession(sessionId);
+    const { query, sessionId } = await request.json();
 
-    if (!session) {
-      console.warn(`Session not found: ${sessionId}`);
-      return null;
-    }
+    const context = await generateContext({ query });
 
-    return session;
+    const response = await generateAnswer(
+      query,
+      context,
+      undefined,
+      sessionId // Optional: enables memory if provided
+    );
+
+    return Response.json({
+      success: true,
+      response: response.response,
+      sessionId: response.sessionId, // Return for client to continue conversation
+      toolsUsed: response.toolsUsed,
+      executionTime: response.executionTimeMs,
+    });
   } catch (error) {
-    console.error(`Failed to retrieve session ${sessionId}:`, error);
-    return null;
+    return Response.json(
+      { success: false, error: "Chat processing failed" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+#### 5. Advanced Usage Patterns
+
+```typescript
+// Conversation management service
+class ConversationManager {
+  async startConversation(userQuery: string, title?: string) {
+    const context = await generateContext({ query: userQuery });
+
+    // Create session with custom title
+    const sessionId = title
+      ? (
+          await createChatSession({
+            session_id: generateSessionId(),
+            title,
+          })
+        ).session_id
+      : "";
+
+    return await generateAnswer(userQuery, context, undefined, sessionId);
+  }
+
+  async continueConversation(sessionId: string, userQuery: string) {
+    const context = await generateContext({ query: userQuery });
+    return await generateAnswer(userQuery, context, undefined, sessionId);
+  }
+
+  async getHistory(sessionId: string) {
+    return await getChatSession(sessionId);
+  }
+
+  async getSummary(sessionId: string) {
+    const session = await getChatSession(sessionId);
+    if (!session) return null;
+
+    return {
+      title: session.title,
+      messageCount: session.messages.length,
+      lastActivity: session.updated_at,
+      preview: session.messages[0]?.content?.substring(0, 100) + "...",
+    };
   }
 }
 
-// Graceful message saving
-async function safeSaveMessage(input: CreateChatMessageInput) {
+// Usage
+const conversationManager = new ConversationManager();
+
+// Start new conversation
+const newChat = await conversationManager.startConversation(
+  "Plan a trip to San Francisco",
+  "SF Trip Planning"
+);
+
+// Continue conversation
+const followUp = await conversationManager.continueConversation(
+  newChat.sessionId!,
+  "What about the Golden Gate Bridge?"
+);
+
+// Get conversation summary
+const summary = await conversationManager.getSummary(newChat.sessionId!);
+```
+
+#### 6. Error Handling & Best Practices
+
+```typescript
+// Robust conversation handling
+async function robustConversation(userQuery: string, sessionId?: string) {
   try {
-    if (!isValidChatRole(input.role)) {
-      throw new Error(`Invalid chat role: ${input.role}`);
+    const context = await generateContext({ query: userQuery });
+
+    const response = await generateAnswer(
+      userQuery,
+      context,
+      (status) => {
+        console.log(`[${status.step}] ${status.description}`);
+      },
+      sessionId
+    );
+
+    if (!response.success) {
+      console.error("Chat generation failed:", response.response);
+      return null;
     }
 
-    return await saveChatMessage(input);
+    return response;
   } catch (error) {
-    console.error("Failed to save message:", error);
-    throw error; // Re-throw for upstream handling
+    console.error("Conversation error:", error);
+
+    // Fallback to stateless operation
+    try {
+      const context = await generateContext({ query: userQuery });
+      return await generateAnswer(userQuery, context); // No sessionId = stateless
+    } catch (fallbackError) {
+      console.error("Fallback also failed:", fallbackError);
+      return null;
+    }
+  }
+}
+
+// Session validation
+async function validateSession(sessionId: string): Promise<boolean> {
+  try {
+    const session = await getChatSession(sessionId);
+    return session !== null;
+  } catch (error) {
+    console.error("Session validation failed:", error);
+    return false;
   }
 }
 ```
