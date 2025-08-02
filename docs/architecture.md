@@ -54,7 +54,14 @@ Intelligent context building combining retrieved documents, conversation history
 
 ### 5. Generation & Response Phase
 
-AI-powered response generation using OpenAI's chat completion with context-aware prompting, tool-augmented responses, and conversational memory persistence.
+AI-powered response generation using OpenAI's chat completion with context-aware prompting, tool-augmented responses, conversational memory persistence, and real-time streaming capabilities via Server-Sent Events (SSE).
+
+#### Real-time Streaming Features
+
+- **Server-Sent Events**: Live status updates during processing
+- **Progressive Response**: Incremental result delivery
+- **Connection Management**: Robust stream lifecycle handling
+- **Error Recovery**: Graceful failure handling with automatic reconnection
 
 ### 6. Learning & Adaptation Phase
 
@@ -70,11 +77,19 @@ adventurecue/
 │   ├── src/
 │   │   ├── app/                 # Next.js app router
 │   │   │   ├── layout.tsx       # Root layout
-│   │   │   └── page.tsx         # Main page component
+│   │   │   ├── page.tsx         # Main page component
+│   │   │   ├── globals.css      # Global styles
+│   │   │   └── favicon.ico      # App favicon
 │   │   ├── components/          # React components
 │   │   │   ├── ingest.tsx       # Ingestion UI component
 │   │   │   └── query.tsx        # Query UI component
 │   │   └── lib/                 # Frontend utilities
+│   │       └── packages/        # Reusable packages
+│   │           └── sse-streaming-client/  # SSE client library
+│   │               ├── sse-streaming-client.ts    # Core streaming client
+│   │               ├── usage-examples.tsx         # Usage examples
+│   │               ├── index.ts                   # Package exports
+│   │               └── README.md                  # Client documentation
 │   └── public/                  # Static assets
 │
 ├── 🌐 API LAYER (Backend Endpoints)
@@ -105,6 +120,7 @@ adventurecue/
 │       ├── prompts/             # 📝 PROMPT MANAGEMENT
 │       │   ├── prompts.ts       # → System & user prompt templates
 │       │   ├── types.ts
+│       │   ├── utils.ts         # → Prompt utilities
 │       │   └── index.ts
 │       ├── query/               # 🎯 QUERY ORCHESTRATION
 │       │   ├── query.ts         # → RAG pipeline orchestrator (Query Agent)
@@ -114,6 +130,10 @@ adventurecue/
 │       │   ├── status-tracking.ts    # → Real-time operation monitoring
 │       │   ├── status-examples.ts    # → Usage examples & templates
 │       │   └── index.ts
+│       ├── streaming/           # 🌊 REAL-TIME STREAMING
+│       │   ├── sse-handler.ts   # → Server-Sent Events implementation
+│       │   ├── roadmap.md       # → Future enhancement roadmap
+│       │   └── index.ts         # → Streaming service exports
 │       ├── tools/               # 🛠️ TOOL EXECUTION
 │       │   ├── tools.ts         # → Tool execution framework (Agentic Tools)
 │       │   └── index.ts
@@ -121,7 +141,14 @@ adventurecue/
 │
 ├── 🔌 INTEGRATION LAYER (External Services)
 │   ├── netlify/clients/         # External service clients
+│   │   ├── database.ts          # → Database connection utilities
+│   │   ├── openai.ts            # → OpenAI API client
+│   │   └── index.ts
 │   └── netlify/utils/           # Shared utility functions
+│       ├── file-system.ts       # → File system operations
+│       ├── rate-limiting.ts     # → Rate limiting utilities
+│       ├── validation.ts        # → Request validation
+│       └── index.ts
 │
 ├── 💾 DATA LAYER (Database & Storage)
 │   ├── db/
@@ -154,6 +181,10 @@ adventurecue/
 - **Chat Session**: Persistent conversation container that maintains continuity across multiple message exchanges with unique session identifiers (schema in `memory/types.ts`).
 
 - **Status Tracking**: Real-time progress monitoring system that provides step-by-step feedback during chat processing (implemented in `status/status-tracking.ts`).
+
+- **Streaming Service**: Real-time response delivery system using Server-Sent Events (SSE) for live status updates and progressive result streaming (implemented in `streaming/sse-handler.ts`).
+
+- **SSE Protocol**: Server-Sent Events implementation following web standards for unidirectional real-time communication from server to client with proper event formatting and connection management.
 
 - **Chat Message**: Individual conversation units with role-based typing (user, assistant, system) stored with session context (schema in `memory/types.ts`).
 
@@ -231,10 +262,13 @@ Environment validation → File processing → Text chunking → Vector embeddin
 
 ### **Real-time Features**
 
-- **Status Tracking**: Live processing feedback
-- **Streaming Responses**: Server-Sent Events for real-time updates
-- **Progress Monitoring**: Step-by-step operation visibility
-- **Error Handling**: Graceful failure recovery
+- **Status Tracking**: Live processing feedback with step-by-step visibility
+- **Streaming Service**: Dedicated SSE service for real-time response delivery
+- **Server-Sent Events**: Standards-compliant streaming protocol implementation
+- **Progressive Responses**: Incremental result delivery during processing
+- **Connection Management**: Robust stream lifecycle with error recovery
+- **Client Integration**: TypeScript SSE client library for frontend consumption
+- **Error Handling**: Graceful failure recovery with automatic reconnection
 
 ### **Data Processing Pipeline**
 

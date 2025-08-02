@@ -1,6 +1,7 @@
 # Chat Endpoint Documentation
 
 ## Table of Contents
+
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Flow Diagram](#flow-diagram)
@@ -18,6 +19,7 @@ The chat endpoint provides AI-powered conversational capabilities with support f
 **Endpoint:** `POST /netlify/functions/chat`
 
 **Response Modes:**
+
 - **Standard Mode**: Complete response after processing with collected status updates
 - **Streaming Mode**: Real-time updates via Server-Sent Events using dedicated streaming service
 
@@ -61,35 +63,35 @@ graph TD
     A[Client Request] --> B{Method = POST?}
     B -->|No| C[405 Method Not Allowed]
     B -->|Yes| D[Parse JSON Body]
-    
+
     D --> E{Valid JSON?}
     E -->|No| F[400 Bad Request]
     E -->|Yes| G[Validate Request Schema]
-    
+
     G --> H{Valid Schema?}
     H -->|No| I[400 Validation Error]
     H -->|Yes| J{Streaming Mode?}
-    
+
     J -->|No| K[Standard Processing Path]
     J -->|Yes| L[Streaming Service Handler]
-    
+
     K --> M[Initialize Status Collector]
     M --> N[Generate Context from Embedding Service]
     N --> O[Generate Answer via Chat Service]
     O --> P[Merge Status Updates]
     P --> Q[Return Complete JSON Response]
-    
+
     L --> R[Create SSE ReadableStream]
     R --> S[Set SSE Headers]
     S --> T[Process with Real-time Callbacks]
     T --> U[Stream Status Events]
     U --> V[Stream Final Result]
     V --> W[Close Stream]
-    
+
     X[Service Error] --> Y{Streaming?}
     Y -->|No| Z[500 Internal Server Error]
     Y -->|Yes| AA[Stream Error Event & Close]
-    
+
     style A fill:#2d3748,stroke:#4a5568,color:#ffffff
     style J fill:#2b6cb0,stroke:#3182ce,color:#ffffff
     style L fill:#065f46,stroke:#059669,color:#ffffff
@@ -102,28 +104,33 @@ graph TD
 ## Design Patterns
 
 ### 1. Strategy Pattern
+
 - **Context**: Response processing mode selection
 - **Strategies**: Standard processing vs. Streaming service
 - **Implementation**: Route-based strategy selection via `streaming` boolean flag
 - **Benefits**: Clean separation of synchronous and asynchronous response handling
 
 ### 2. Service Layer Pattern
+
 - **Purpose**: Encapsulate business logic in dedicated services
 - **Services**: Chat Service, Embedding Service, Streaming Service
 - **Benefits**: Loose coupling, reusability, and independent testing
 
 ### 3. Observer Pattern
+
 - **Subject**: Chat processing services
 - **Observers**: Status update callbacks
 - **Usage**: Real-time status notifications during query processing
 - **Implementation**: Callback functions passed through service layers
 
 ### 4. Chain of Responsibility
+
 - **Handlers**: Method validation → JSON parsing → Schema validation → Processing
 - **Early Exit**: Each handler can terminate the chain on failure
 - **Benefits**: Clean error handling and request preprocessing
 
 ### 5. Facade Pattern
+
 - **Facade**: Chat endpoint handler
 - **Subsystems**: Validation, Chat Service, Embedding Service, Streaming Service
 - **Benefits**: Simplified interface for complex service orchestration
@@ -145,16 +152,17 @@ validateRequest() → generateContext() → generateAnswer() → handleStreaming
 
 ### Service Responsibilities
 
-| Service | Responsibility | Location |
-|---------|---------------|----------|
-| **Chat Service** | AI conversation processing with memory | `services/chat/` |
-| **Embedding Service** | Vector generation and similarity search | `services/embedding/` |
-| **Streaming Service** | Real-time SSE response delivery | `services/streaming/` |
-| **Validation Utility** | Request schema validation | `utils/validation.ts` |
+| Service                | Responsibility                          | Location              |
+| ---------------------- | --------------------------------------- | --------------------- |
+| **Chat Service**       | AI conversation processing with memory  | `services/chat/`      |
+| **Embedding Service**  | Vector generation and similarity search | `services/embedding/` |
+| **Streaming Service**  | Real-time SSE response delivery         | `services/streaming/` |
+| **Validation Utility** | Request schema validation               | `utils/validation.ts` |
 
 ## Request/Response Structure
 
 ### Request Schema
+
 ```typescript
 {
   query: string;        // Required: User's chat query
@@ -163,6 +171,7 @@ validateRequest() → generateContext() → generateAnswer() → handleStreaming
 ```
 
 ### Standard Response
+
 ```typescript
 {
   answer: string;       // AI-generated response
@@ -172,6 +181,7 @@ validateRequest() → generateContext() → generateAnswer() → handleStreaming
 ```
 
 ### SSE Event Types
+
 ```typescript
 // Status Update Event
 {
@@ -199,15 +209,16 @@ validateRequest() → generateContext() → generateAnswer() → handleStreaming
 
 ## Error Handling
 
-| Error Type | Status Code | Response | SSE Behavior |
-|------------|-------------|----------|--------------|
-| Invalid Method | 405 | Plain text | N/A |
-| Invalid JSON | 400 | Plain text | N/A |
-| Schema Validation | 400 | Plain text | N/A |
-| Service Error | 500 | Plain text | Error event + close |
-| Streaming Error | 500 | N/A | Error event + close |
+| Error Type        | Status Code | Response   | SSE Behavior        |
+| ----------------- | ----------- | ---------- | ------------------- |
+| Invalid Method    | 405         | Plain text | N/A                 |
+| Invalid JSON      | 400         | Plain text | N/A                 |
+| Schema Validation | 400         | Plain text | N/A                 |
+| Service Error     | 500         | Plain text | Error event + close |
+| Streaming Error   | 500         | N/A        | Error event + close |
 
 ### Error Recovery Strategies
+
 - **Standard Mode**: Immediate error response with HTTP status codes
 - **Streaming Mode**: Error events sent via SSE before closing connection
 - **Service Failures**: Graceful degradation with informative error messages
@@ -215,6 +226,7 @@ validateRequest() → generateContext() → generateAnswer() → handleStreaming
 ## Usage Guide
 
 ### Standard Request (JSON Response)
+
 ```bash
 curl -X POST https://your-domain.netlify.app/.netlify/functions/chat \
   -H "Content-Type: application/json" \
@@ -222,6 +234,7 @@ curl -X POST https://your-domain.netlify.app/.netlify/functions/chat \
 ```
 
 **Response:**
+
 ```json
 {
   "answer": "Based on the travel information available...",
@@ -233,7 +246,7 @@ curl -X POST https://your-domain.netlify.app/.netlify/functions/chat \
       "timestamp": "2025-08-01T10:30:00Z"
     },
     {
-      "step": "answer_generation", 
+      "step": "answer_generation",
       "description": "Generating AI response",
       "status": "completed",
       "timestamp": "2025-08-01T10:30:02Z"
@@ -243,6 +256,7 @@ curl -X POST https://your-domain.netlify.app/.netlify/functions/chat \
 ```
 
 ### Streaming Request (SSE)
+
 ```bash
 curl -X POST https://your-domain.netlify.app/.netlify/functions/chat \
   -H "Content-Type: application/json" \
@@ -251,6 +265,7 @@ curl -X POST https://your-domain.netlify.app/.netlify/functions/chat \
 ```
 
 **SSE Stream:**
+
 ```
 data: {"type":"status","status":{"step":"context_generation","description":"Retrieving relevant travel information","status":"in-progress","timestamp":"2025-08-01T10:30:00Z"}}
 
@@ -262,56 +277,60 @@ data: {"type":"final","result":{"answer":"Here's your 3-day San Francisco itiner
 ## Frontend Integration
 
 ### Standard Mode (Fetch API)
+
 ```javascript
 async function sendChatMessage(query) {
   try {
-    const response = await fetch('/.netlify/functions/chat', {
-      method: 'POST',
+    const response = await fetch("/.netlify/functions/chat", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query })
+      body: JSON.stringify({ query }),
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const result = await response.json();
-    console.log('Answer:', result.answer);
-    console.log('Processing steps:', result.steps);
+    console.log("Answer:", result.answer);
+    console.log("Processing steps:", result.steps);
     return result;
   } catch (error) {
-    console.error('Chat request failed:', error);
+    console.error("Chat request failed:", error);
     throw error;
   }
 }
 ```
 
 ### Streaming Mode (EventSource API)
+
 ```javascript
 function sendStreamingChatMessage(query, onStatus, onComplete, onError) {
   // Note: EventSource doesn't support POST requests directly
   // This example shows the concept - you'd need to use fetch with ReadableStream
   // or implement a custom SSE client
-  
-  const eventSource = new EventSource(`/.netlify/functions/chat?query=${encodeURIComponent(query)}&streaming=true`);
-  
+
+  const eventSource = new EventSource(
+    `/.netlify/functions/chat?query=${encodeURIComponent(query)}&streaming=true`
+  );
+
   eventSource.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-      
+
       switch (data.type) {
-        case 'status':
+        case "status":
           onStatus(data.status);
           break;
-          
-        case 'final':
+
+        case "final":
           onComplete(data.result);
           eventSource.close();
           break;
-          
-        case 'error':
+
+        case "error":
           onError(new Error(data.error));
           eventSource.close();
           break;
@@ -321,26 +340,27 @@ function sendStreamingChatMessage(query, onStatus, onComplete, onError) {
       eventSource.close();
     }
   };
-  
+
   eventSource.onerror = (error) => {
     onError(error);
     eventSource.close();
   };
-  
+
   return () => eventSource.close();
 }
 ```
 
 ### Custom SSE Client (Recommended)
+
 ```javascript
 async function streamingChatRequest(query, onStatus, onComplete, onError) {
   try {
-    const response = await fetch('/.netlify/functions/chat', {
-      method: 'POST',
+    const response = await fetch("/.netlify/functions/chat", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query, streaming: true })
+      body: JSON.stringify({ query, streaming: true }),
     });
 
     if (!response.ok) {
@@ -351,35 +371,35 @@ async function streamingChatRequest(query, onStatus, onComplete, onError) {
     const decoder = new TextDecoder();
 
     if (!reader) {
-      throw new Error('Response body is not readable');
+      throw new Error("Response body is not readable");
     }
 
     while (true) {
       const { done, value } = await reader.read();
-      
+
       if (done) break;
-      
+
       const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-      
+      const lines = chunk.split("\n");
+
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
+        if (line.startsWith("data: ")) {
           try {
             const data = JSON.parse(line.slice(6));
-            
+
             switch (data.type) {
-              case 'status':
+              case "status":
                 onStatus(data.status);
                 break;
-              case 'final':
+              case "final":
                 onComplete(data.result);
                 return;
-              case 'error':
+              case "error":
                 onError(new Error(data.error));
                 return;
             }
           } catch (parseError) {
-            console.warn('Failed to parse SSE data:', parseError);
+            console.warn("Failed to parse SSE data:", parseError);
           }
         }
       }
@@ -391,21 +411,22 @@ async function streamingChatRequest(query, onStatus, onComplete, onError) {
 ```
 
 ### React Hook Example
+
 ```javascript
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 function useChatStream() {
   const [status, setStatus] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const sendMessage = useCallback(async (query, streaming = false) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
     setStatus(null);
-    
+
     if (streaming) {
       await streamingChatRequest(
         query,
@@ -430,13 +451,13 @@ function useChatStream() {
       }
     }
   }, []);
-  
+
   return {
     sendMessage,
     status,
     result,
     error,
-    isLoading
+    isLoading,
   };
 }
 ```
