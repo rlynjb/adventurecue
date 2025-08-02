@@ -73,12 +73,34 @@ Implement minimal [FEATURE] support by adding logic to [CORE_FUNCTIONALITY] with
 - No additional features (e.g. [ADVANCED_FEATURE_1], [ADVANCED_FEATURE_2], [ADVANCED_FEATURE_3])
 - Do not modify existing tables or services unless explicitly required
 - Use existing architectural patterns and abstractions in the [TARGET_SERVICE] service
+- Include proper error handling for database operations and edge cases
+- Add input validation where data enters the service
 - Assume this is a foundational step that will be expanded later
 
 Keep the implementation clean, minimal, and extensible.
 ```
 
 **Deploy and test to see if the main functionality is still working** (add tracing, logging, debugging later)
+
+#### Testing Prompt (Optional but Recommended):
+
+```
+Create basic tests for the [SERVICE_NAME] service to ensure it works correctly.
+
+🧪 Testing Requirements:
+- Write simple unit tests for core [SERVICE_NAME] functions
+- Test database operations (create, read, update, delete)
+- Verify error handling and edge cases
+- Use existing testing patterns in the codebase
+- Keep tests minimal but comprehensive
+
+🎯 Focus:
+- Test the happy path and one error scenario per function
+- Ensure database operations don't affect existing data
+- Verify type safety and schema compliance
+
+Stop after creating basic tests. Integration tests can be added later.
+```
 
 ### 3. Service Integration - Where Can This Service Be Used?
 
@@ -149,6 +171,28 @@ Integrate the `[SERVICE_NAME]` into an existing or new [DEPLOYMENT_PLATFORM] Fun
 - A working [DEPLOYMENT_PLATFORM] Function handler that routes to `[SERVICE_NAME]`
 - Clean error handling and a success response format
 - Inline comments explaining each step of the integration
+- Basic performance considerations (e.g., connection pooling, query optimization)
+- Monitoring/logging hooks for debugging in production
+```
+
+#### Performance & Monitoring Prompt (Optional):
+
+```
+Add basic monitoring and performance optimizations to the [SERVICE_NAME] endpoint.
+
+🔍 Monitoring:
+- Add request/response logging with timestamps
+- Include performance metrics (response time, database query time)
+- Log errors with sufficient context for debugging
+- Use existing logging patterns in the codebase
+
+⚡ Performance:
+- Implement basic caching where appropriate
+- Optimize database queries (use indexes, limit results)
+- Add request rate limiting if needed
+- Consider connection pooling for database operations
+
+Keep optimizations simple and measurable.
 ```
 
 ### 5. Frontend UI Implementation - Consuming the Endpoint
@@ -174,6 +218,28 @@ Include:
   - Suggest a possible UI 3rd-party library or a basic custom React implementation.
 ```
 
+#### Security Review Prompt (Recommended):
+
+```
+Review the [FEATURE_NAME] implementation for basic security considerations.
+
+🔒 Security Checklist:
+- Input validation and sanitization at all entry points
+- SQL injection prevention (using parameterized queries)
+- Authentication/authorization requirements
+- Rate limiting to prevent abuse
+- Data privacy considerations (PII handling)
+- CORS configuration if needed
+
+🎯 Focus:
+- Ensure no sensitive data is logged or exposed
+- Validate all user inputs before processing
+- Follow existing security patterns in the codebase
+- Document any security assumptions or requirements
+
+Keep security measures practical and aligned with existing patterns.
+```
+
 ---
 
 ## Development Guidelines
@@ -186,6 +252,25 @@ Write all code adhering to these principles:
 - **Documentation reference**: Refer to files in the docs directory for architecture, tech stack, and app information
 - **Educational comments**: Include comments as if a junior trainee developer is reading them
 - **Essential focus**: Implement only the essentials - keep it simple
+- **Rollback ready**: Structure changes so they can be easily reverted if needed
+- **Feature flags**: Consider using feature flags for gradual rollouts
+
+### Rollback Strategy Template:
+
+```
+If this [FEATURE_NAME] needs to be rolled back:
+
+🔄 Database Rollback:
+- Create a rollback migration file that removes the new tables
+- Ensure rollback doesn't affect existing data
+- Test rollback process in development first
+
+📦 Code Rollback:
+- Keep feature code isolated in separate modules/files
+- Use feature flags to enable/disable functionality
+- Maintain backward compatibility with existing APIs
+- Document rollback steps for quick recovery
+```
 
 ---
 
@@ -271,5 +356,20 @@ Use these placeholder variables in your prompts:
 - `[SERVICE_PATH]` - Path to service files
 - `[RELATED_SERVICE_X]` - Names of related services
 - `[EXAMPLE_ACTION_X]` - Example actions for documentation
+
+### Quality Assurance Variables:
+
+- `[TESTING_FRAMEWORK]` - Testing library being used (e.g., Jest, Vitest)
+- `[ERROR_SCENARIOS]` - Common error cases to handle
+- `[PERFORMANCE_TARGETS]` - Expected response times or throughput
+- `[SECURITY_REQUIREMENTS]` - Authentication, authorization needs
+- `[MONITORING_TOOLS]` - Logging and monitoring solutions
+
+### Advanced Variables:
+
+- `[FEATURE_FLAG_NAME]` - Name for feature flag if using gradual rollout
+- `[MIGRATION_DEPENDENCIES]` - Other migrations this depends on
+- `[BREAKING_CHANGES]` - Any potential breaking changes to note
+- `[ROLLBACK_STRATEGY]` - Plan for reverting changes if needed
 
 This template provides a proven, systematic approach to feature development that maintains code quality, architectural consistency, and developer accessibility.
