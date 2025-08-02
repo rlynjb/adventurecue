@@ -1,12 +1,14 @@
 # Development Prompts Template
 
-This document contains prompt templates for successfully building features in complex applications. These templates follow proven patterns for incremental, safe development with clear boundaries and stopping points.
+This document contains proven prompt templates for successfully building features in complex applications. These templates follow incremental, safe development with clear boundaries and stopping points.
 
-## Example: Database Setup (Step 1)
+## Feature Development Workflow
 
-### Step 1: Database Setup
+Break down any feature by following these 5 sequential steps:
 
-#### Basic Version (Original Prompt)
+### 1. Database Design, Schema, and Migration
+
+#### Basic Version:
 
 ```
 build a simple [FEATURE_NAME] for this app as if junior trainee developer is building it. just include the essentials or foundation but it can be extended in future.
@@ -14,9 +16,11 @@ dont build the entire thing in a single chat question. start with setting up dat
 there is already existing tables and data set. create a migration file that can only add new tables. avoid dropping tables and deleting data!
 ```
 
-#### Optimized Version (Recommended)
+#### Optimized Version (Recommended):
 
 ```
+I want to implement a [FEATURE_NAME] feature.
+
 I'm adding a basic [FEATURE_NAME] feature to my [APPLICATION_TYPE] application.
 
 Here's the context:
@@ -39,212 +43,233 @@ Please:
 Stop after writing the migration. Don't build any endpoints or logic yet.
 ```
 
-#### Key Improvements in Optimized Version:
+### 2. Define Essential Service Features, Utilities, and Types
 
-- **Clear context**: Explicit technology stack and constraints
-- **Specific requirements**: Detailed database requirements with exact column needs
-- **Safety constraints**: Emphasized non-destructive changes
-- **Scope limitation**: Clear boundary to stop after migration
-- **Developer level**: Specified junior developer to ensure simplicity
-- **Extensibility focus**: Emphasized future-proof design
+#### Basic Version:
 
-#### What This Step Pattern Accomplishes:
+```
+I would like to expand this [SERVICE_NAME] service to be implemented on the [TARGET_SERVICE] service.
+Refer to docs/[DATABASE_DOC].md to see what [FEATURE] tables and fields have already been migrated.
+and refer to docs/services/[TARGET_SERVICE].md of the architecture, layers, and core components that are already in place.
+Keep it minimal and essential.
+Stick to just [CORE_FUNCTIONALITY] and don't add anything extra.
+I will expand later.
+```
 
-- Creates new migration file with safe, additive changes
-- Establishes database foundation for the feature
-- Sets up tables with proper relationships and constraints
-- Includes essential columns for core functionality
-- Provides extensible foundation for future development
+#### Optimized Version (Recommended):
+
+```
+I would like to expand the [SERVICE_NAME] service to be implemented into the existing [TARGET_SERVICE] service.
+
+📚 References:
+- See `docs/[DATABASE_DOC].md` for the [FEATURE] tables and fields that have already been migrated.
+- See `docs/services/[TARGET_SERVICE].md` for the service architecture, layer structure, and existing core components.
+
+🎯 Goal:
+Implement minimal [FEATURE] support by adding logic to [CORE_FUNCTIONALITY] within the [TARGET_SERVICE] flow.
+
+✅ Constraints:
+- Stick to just [CORE_FUNCTIONALITY]
+- No additional features (e.g. [ADVANCED_FEATURE_1], [ADVANCED_FEATURE_2], [ADVANCED_FEATURE_3])
+- Do not modify existing tables or services unless explicitly required
+- Use existing architectural patterns and abstractions in the [TARGET_SERVICE] service
+- Assume this is a foundational step that will be expanded later
+
+Keep the implementation clean, minimal, and extensible.
+```
+
+**Deploy and test to see if the main functionality is still working** (add tracing, logging, debugging later)
+
+### 3. Service Integration - Where Can This Service Be Used?
+
+#### Basic Version:
+
+```
+Expand this service by integrating the new [SERVICE_NAME]
+```
+
+#### Optimized Version (Recommended):
+
+```
+Expand the application by integrating the new `[SERVICE_NAME]` into existing components.
+
+🎯 Goal:
+- Connect `[SERVICE_NAME]` to the relevant parts of the system where it logically fits
+- Follow the architectural conventions used in the app
+- Maintain clear separation of concerns between layers (e.g., API handler, service logic, data access)
+
+📚 Reference:
+- Review `docs/services/[SERVICE_NAME].md` for the service architecture and usage
+- Identify touchpoints in other services (e.g., [RELATED_SERVICE_1], [RELATED_SERVICE_2], [RELATED_SERVICE_3]) that should consume or communicate with `[SERVICE_NAME]`
+
+✅ Requirements:
+- Use existing interfaces or abstractions where applicable
+- Avoid modifying unrelated components
+- Ensure the integration is minimal, testable, and extensible
+- Include basic logging or debug outputs where helpful
+
+🔧 Deliverables:
+- Updated code where `[SERVICE_NAME]` is invoked or referenced
+- Notes or inline comments explaining integration decisions
+- Optional: Add integration test stubs or usage examples if meaningful
+```
+
+### 4. API/Endpoint Implementation (Netlify Functions)
+
+#### Optimized Version (Recommended):
+
+```
+Integrate the `[SERVICE_NAME]` into an existing or new [DEPLOYMENT_PLATFORM] Function endpoint (`[ENDPOINT_PATH]/[name].ts`) in the application.
+
+🎯 Objective:
+- Implement the `[SERVICE_NAME]` logic within the API handler
+- Keep the endpoint focused and minimal — only handle routing, validation, and passing data to the service
+
+🧱 Requirements:
+- Use the existing folder structure and architecture conventions (e.g., handler → service → db)
+- Perform input validation at the top of the function (use `zod` or existing schema if available)
+- Call the appropriate method(s) from `[SERVICE_NAME]` and return formatted API responses
+- Add clear and minimal logging for debugging
+
+🧪 Example Flow:
+1. Validate request
+2. Extract required params or body
+3. Call `[SERVICE_NAME]` method
+4. Return a proper response (`200`, `400`, `500` with JSON)
+
+📚 Reference:
+- Check `docs/services/[SERVICE_NAME].md` for service details
+- Use existing endpoint patterns from other files in `[ENDPOINT_PATH]/`
+
+✅ Constraints:
+- Do not hardcode logic inside the API function — delegate to the service
+- Avoid adding extra responsibilities or unrelated logic
+
+📦 Output:
+- A working [DEPLOYMENT_PLATFORM] Function handler that routes to `[SERVICE_NAME]`
+- Clean error handling and a success response format
+- Inline comments explaining each step of the integration
+```
+
+### 5. Frontend UI Implementation - Consuming the Endpoint
+
+#### API Documentation Prompt:
+
+```
+Write a clean and minimal API documentation in markdown format for a [DEPLOYMENT_PLATFORM] Function endpoint.
+Create an md file in docs/api/[ENDPOINT_NAME].md
+The function is located at [ENDPOINT_PATH]/[ENDPOINT_NAME]
+Include a table of contents after the main title
+Include:
+  - endpoint description
+  - method & full URL path
+  - request headers
+  - request body table + example
+  - success response
+  - error response
+  - frontend usage in TypeScript
+  - HTTP status codes
+  - security notes (if any)
+  - related endpoints table
+  - Suggest a possible UI 3rd-party library or a basic custom React implementation.
+```
 
 ---
 
-## Prompt Engineering Patterns
+## Development Guidelines
 
-### Pattern 1: Context-First Approach
+Write all code adhering to these principles:
 
-Always start with:
-
-- Technology stack details
-- Existing constraints and limitations
-- Developer skill level assumption
-
-### Pattern 2: Safety-First Requirements
-
-- Explicit instructions to avoid destructive operations
-- Clear boundaries on what NOT to touch
-- Emphasis on additive-only changes
-
-### Pattern 3: Incremental Development
-
-- Break complex features into discrete steps
-- Clear stopping points for each step
-- Foundation-first approach before building logic
-
-### Pattern 4: Future-Proofing
-
-- Request extensible designs
-- Ask for best practices compliance
-- Include scalability considerations
+- **Beginner-friendly**: Make it as accessible as possible for junior developers
+- **Architecture alignment**: Tie it to current architecture and tech stack
+- **Composable design**: Minimize refactoring later on
+- **Documentation reference**: Refer to files in the docs directory for architecture, tech stack, and app information
+- **Educational comments**: Include comments as if a junior trainee developer is reading them
+- **Essential focus**: Implement only the essentials - keep it simple
 
 ---
 
-## Template Structure for Future Features
+## Service Documentation Template
+
+### Documentation Generation Prompt:
+
+#### Basic Version:
 
 ```
-I'm adding [FEATURE_NAME] to my [PROJECT_TYPE] application.
+in docs/services, create a file called [SERVICE_NAME] for documentation for [SERVICE_PATH].
+- Include a simple flow diagram, make colors darker, and incorporate design patterns.
+- Make it concise, focusing on architecture and its layers rather than implementation details.
+- Include a section specifying where this service or feature has been integrated.
+- The last section will be Usage. Include terminal commands for common use cases, a How-to guide for implementation, and examples.
+- Add a table of contents after the main title.
+```
 
-Context:
-- Technology stack: [LIST_TECHNOLOGIES]
-- Deployment: [PLATFORM_DETAILS]
-- Database: [DATABASE_INFO]
-- ORM: [ORM_DETAILS]
-- Existing constraints: [WHAT_EXISTS_AND_CANNOT_CHANGE]
-- Developer level: [JUNIOR/SENIOR] developer implementing
-- Scope: [SPECIFIC_PHASE] only
+#### Optimized Version (Recommended):
 
-Requirements:
-- [SPECIFIC_REQUIREMENT_1]
-- [SPECIFIC_REQUIREMENT_2]
-- [SAFETY_CONSTRAINTS]
-- [EXTENSIBILITY_NEEDS]
+```
+Create a documentation file at `docs/services/[SERVICE_NAME].md` for the `[SERVICE_PATH]` service in my [APPLICATION_TYPE] application.
 
-Stop after [CLEAR_BOUNDARY].
+🧱 Structure:
+
+1. **Title**: `[SERVICE_NAME] Service`
+2. **Add a Table of Contents** after the title
+3. **Flow Diagram**:
+   - Include a simple architecture flow diagram
+   - Use darker, accessible color scheme
+   - Reflect key design patterns used (e.g., layered, modular, or event-driven)
+   - Keep it focused on architecture, not implementation
+
+4. **Architecture Section**:
+   - Clearly explain the service's purpose
+   - Break down the architectural layers involved (e.g., handler, service logic, database layer)
+   - Mention any design pattern applied (repository pattern, service abstraction, etc.)
+   - Keep this section concise and high-level
+
+5. **Integration Points**:
+   - List where and how this service is integrated into other parts of the app (e.g., [RELATED_SERVICE_1], [RELATED_SERVICE_2])
+   - Reference related services or endpoints
+
+6. **Usage Section**:
+   - Add terminal commands for common use cases (e.g., run migration, test endpoint)
+   - Include a brief "How-to" guide for implementing or extending the feature
+   - Provide practical examples (e.g., [EXAMPLE_ACTION_1], [EXAMPLE_ACTION_2])
+
+📝 Keep everything focused and minimal — no deep implementation details or internal logic unless essential for usage.
 ```
 
 ---
 
-## Next Steps Template
+## Template Variables Reference
 
-For continuing feature development, use these step-by-step prompt templates:
+Use these placeholder variables in your prompts:
 
-### Step 2: Schema Types
+### Core Application Variables:
 
-#### Prompt Template:
+- `[FEATURE_NAME]` - The specific feature being developed
+- `[APPLICATION_TYPE]` - Type of application (e.g., Agentic RAG, E-commerce)
+- `[SERVICE_NAME]` - Name of the service being created/modified
+- `[TARGET_SERVICE]` - Existing service being integrated with
 
-```
-Now that the database migration is complete, I need to generate TypeScript types for the new tables.
+### Technology Stack Variables:
 
-Context:
-- The migration has been applied and new tables are created
-- Using [ORM_NAME] with TypeScript
-- Need type-safe interfaces for [FEATURE_NAME] operations
-- Focus only on type definitions - no business logic yet
+- `[DEPLOYMENT_PLATFORM]` - Where backend is deployed (e.g., Netlify Functions)
+- `[DATABASE_TYPE]` - Database technology (e.g., Neon Postgres)
+- `[ORM_NAME]` - ORM being used (e.g., Drizzle ORM)
+- `[PRIMARY_KEY_TYPE]` - Type of primary keys (e.g., UUIDs)
 
-Please:
-- Generate TypeScript types/interfaces from the new database schema
-- Create proper type definitions for all table columns
-- Include relationship types between tables
-- Add utility types for common operations (Create, Update, Select)
-- Follow TypeScript best practices for database types
-- Export types for use in other modules
+### Feature-Specific Variables:
 
-Stop after creating the type definitions. Don't build any services or functions yet.
-```
+- `[FEATURE_REQUIREMENTS]` - What the feature needs to accomplish
+- `[REQUIRED_COLUMNS]` - Essential database columns
+- `[CORE_FUNCTIONALITY]` - Main functionality to implement
+- `[ENDPOINT_PATH]` - Path to API endpoints
+- `[ENDPOINT_NAME]` - Name of specific endpoint
 
-#### What This Step Accomplishes:
+### Documentation Variables:
 
-- Type-safe database operations
-- Clear interface definitions
-- Foundation for service layer development
-- Prevents runtime type errors
+- `[DATABASE_DOC]` - Database documentation file name
+- `[SERVICE_PATH]` - Path to service files
+- `[RELATED_SERVICE_X]` - Names of related services
+- `[EXAMPLE_ACTION_X]` - Example actions for documentation
 
-### Step 3: Core Services
-
-#### Prompt Template:
-
-```
-Now I need to build the core service layer for [FEATURE_NAME] using the types we just created.
-
-Context:
-- Database tables and TypeScript types are ready
-- Using [ORM_NAME] for database operations
-- Need basic CRUD operations for [FEATURE_NAME]
-- Assume junior developer - keep it simple and extensible
-- Focus only on service layer - no API endpoints yet
-
-Please:
-- Create a service module for [FEATURE_NAME] operations
-- Implement basic CRUD functions (create, read, update, delete)
-- Use the TypeScript types we defined earlier
-- Include proper error handling and validation
-- Add utility functions for common queries
-- Follow single responsibility principle
-- Make functions pure and testable
-
-Stop after creating the service layer. Don't build API endpoints or UI components yet.
-```
-
-#### What This Step Accomplishes:
-
-- Reusable business logic functions
-- Consistent database operations
-- Error handling and validation
-- Foundation for API layer
-
-### Step 4: API Integration
-
-#### Prompt Template:
-
-```
-Now I need to create API endpoints that use the [FEATURE_NAME] service layer.
-
-Context:
-- Database, types, and service layer are complete
-- Using [DEPLOYMENT_PLATFORM] for serverless functions
-- Need RESTful endpoints for [FEATURE_NAME] operations
-- Require request validation and error handling
-- Focus only on API layer - no frontend yet
-
-Please:
-- Create [DEPLOYMENT_PLATFORM] function endpoints for [FEATURE_NAME]
-- Implement REST endpoints (GET, POST, PUT, DELETE as needed)
-- Add request/response validation using the existing types
-- Include proper HTTP status codes and error responses
-- Add middleware for common operations (auth, CORS, etc.)
-- Follow API best practices and consistent response format
-- Include basic rate limiting considerations
-
-Stop after creating the API endpoints. Don't build frontend components yet.
-```
-
-#### What This Step Accomplishes:
-
-- RESTful API endpoints
-- Request/response validation
-- Consistent error handling
-- Ready for frontend integration
-
-### Step 5: Frontend Integration
-
-#### Prompt Template:
-
-```
-Finally, I need to create the frontend components that consume the [FEATURE_NAME] API.
-
-Context:
-- Backend API endpoints are complete and tested
-- Using React with TypeScript
-- Need UI components for [FEATURE_NAME] functionality
-- Should integrate with existing application design
-- Focus on core functionality - keep it simple and extensible
-
-Please:
-- Create React components for [FEATURE_NAME] UI
-- Implement API calls to the backend endpoints
-- Add proper loading states and error handling
-- Include form validation for user inputs
-- Follow existing component patterns and styling
-- Add real-time updates if applicable (SSE, WebSocket)
-- Make components reusable and composable
-
-Stop after creating the basic frontend integration. Advanced features can be added later.
-```
-
-#### What This Step Accomplishes:
-
-- Complete user interface
-- API integration and error handling
-- Real-time updates capability
-- Full feature implementation
-
-Each step maintains the same incremental, safety-first approach with clear boundaries and stopping points.
+This template provides a proven, systematic approach to feature development that maintains code quality, architectural consistency, and developer accessibility.
