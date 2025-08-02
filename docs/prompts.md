@@ -3,6 +3,7 @@
 ## Table of Contents
 
 1. [Feature Development Workflow](#feature-development-workflow)
+   - [0. Feature Planning & Impact Analysis](#0-feature-planning--impact-analysis)
    - [1. Database Design, Schema, and Migration](#1-database-design-schema-and-migration)
    - [2. Define Essential Service Features, Utilities, and Types](#2-define-essential-service-features-utilities-and-types)
    - [3. Service Integration - Where Can This Service Be Used?](#3-service-integration---where-can-this-service-be-used)
@@ -26,7 +27,63 @@ This document contains proven prompt templates for successfully building feature
 
 ## Feature Development Workflow
 
-Break down any feature by following these 5 sequential steps:
+Break down any feature by following these 6 sequential steps:
+
+### 0. Feature Planning & Impact Analysis
+
+#### Basic Version:
+
+```
+I want to plan a [FEATURE_NAME] feature for my app. Help me think through this before I start coding.
+```
+
+#### Optimized Version (Recommended):
+
+```
+I'm planning to implement a [FEATURE_NAME] feature in my [APPLICATION_TYPE] application and need to analyze the impact and plan the approach.
+
+🎯 Planning Objectives:
+- Define clear success criteria for [FEATURE_NAME]
+- Identify all systems and components that will be affected
+- Estimate complexity, timeline, and potential risks
+- Plan rollback strategy upfront before any development
+
+📋 Analysis Areas:
+- **User Impact**: How will this feature benefit users?
+- **Technical Dependencies**: What existing systems need to be modified?
+- **Database Impact**: What new tables or schema changes are required?
+- **API Changes**: Will this require new endpoints or modify existing ones?
+- **Frontend Requirements**: What UI components need to be built or updated?
+- **Security Considerations**: Are there any authentication, authorization, or data privacy concerns?
+- **Performance Impact**: Will this affect application performance or scalability?
+
+🔍 Risk Assessment:
+- What could go wrong during implementation?
+- What are the potential breaking changes?
+- How can we minimize risk to existing functionality?
+- What's the rollback plan if something fails?
+
+📊 Success Metrics:
+- How will we measure if this feature is successful?
+- What are the acceptance criteria?
+- How will we monitor the feature post-deployment?
+
+🗓️ Implementation Plan:
+- Break down the feature into the 5 development steps
+- Identify which step might be most complex or risky
+- Plan testing strategy for each step
+- Set realistic timeline expectations
+
+Stop after creating the plan. Don't start any implementation yet.
+```
+
+#### What This Step Accomplishes:
+
+- **Clear Direction**: Establishes well-defined goals and success criteria
+- **Risk Mitigation**: Identifies potential issues before they become problems
+- **Resource Planning**: Realistic timeline and complexity estimation
+- **Stakeholder Alignment**: Clear communication of what will be built and why
+- **Rollback Preparation**: Safety net planned before development starts
 
 ### 1. Database Design, Schema, and Migration
 
