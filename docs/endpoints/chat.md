@@ -1,385 +1,332 @@
 # Chat Endpoint Documentation
 
 ## Table of Contents
+
 - [Overview](#overview)
-- [Architecture](#architecture)
-- [Flow Diagram](#flow-diagram)
+- [Architectural Layers](#architectural-layers)
+- [Request Flow Diagram](#request-flow-diagram)
 - [Design Patterns](#design-patterns)
-- [Service Dependencies](#service-dependencies)
-- [Request/Response Structure](#requestresponse-structure)
+- [Service Integration](#service-integration)
+- [Response Strategies](#response-strategies)
 - [Error Handling](#error-handling)
-- [Usage Guide](#usage-guide)
-- [Frontend Integration](#frontend-integration)
+- [Usage Examples](#usage-examples)
 
 ## Overview
 
-The chat endpoint provides AI-powered conversational capabilities with support for both synchronous and real-time streaming responses. The refactored architecture now leverages dedicated services for chat processing, embedding generation, and streaming functionality.
+The Chat Endpoint serves as the primary HTTP gateway for the Agentic RAG pipeline, orchestrating conversational AI capabilities through a multi-layered architecture. It provides both synchronous and asynchronous response modes with comprehensive status tracking.
 
 **Endpoint:** `POST /netlify/functions/chat`
 
-**Response Modes:**
-- **Standard Mode**: Complete response after processing with collected status updates
-- **Streaming Mode**: Real-time updates via Server-Sent Events using dedicated streaming service
+**Core Capabilities:**
 
-## Architecture
+- Intelligent conversation orchestration
+- Real-time streaming via Server-Sent Events
+- Dynamic service coordination
+- Comprehensive error recovery
 
-The chat endpoint follows a modular service-oriented architecture with clear separation of concerns:
+## Architectural Layers
+
+The endpoint implements a clean separation of concerns across distinct architectural layers:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   HTTP Handler Layer                    │
+│                 🌐 HTTP Interface Layer                 │
 │  ┌─────────────────┐    ┌─────────────────────────────┐ │
-│  │ Request Router  │────│ Validation Middleware       │ │
-│  │ (chat.ts)       │    │ (validation.ts)             │ │
+│  │ Request Handler │────│ Response Formatter          │ │
+│  │ (Validation)    │    │ (JSON/SSE)                  │ │
 │  └─────────────────┘    └─────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────┐
-│                Processing Strategy Layer                │
+│               ⚡ Strategy Orchestration Layer            │
 │  ┌─────────────────┐    ┌─────────────────────────────┐ │
-│  │ Standard Mode   │    │ Streaming Service           │ │
-│  │ Processor       │    │ (streaming/sse-handler.ts) │ │
+│  │ Standard        │    │ Streaming                   │ │
+│  │ Processor       │    │ Processor                   │ │
 │  └─────────────────┘    └─────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────┐
-│                    Service Layer                        │
-│  ┌─────────────────┐    ┌─────────────────┐   ┌───────┐ │
-│  │ Chat Service    │────│ Embedding       │───│Status │ │
-│  │ (chat/chat.ts)  │    │ Service         │   │Track. │ │
-│  │                 │    │ (embedding/)    │   │       │ │
-│  └─────────────────┘    └─────────────────┘   └───────┘ │
+│                🔧 Service Coordination Layer            │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐ │
+│  │ Chat        │ │ Embedding   │ │ Streaming           │ │
+│  │ Service     │ │ Service     │ │ Service             │ │
+│  └─────────────┘ └─────────────┘ └─────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Flow Diagram
+## Request Flow Diagram
 
 ```mermaid
 graph TD
-    A[Client Request] --> B{Method = POST?}
-    B -->|No| C[405 Method Not Allowed]
-    B -->|Yes| D[Parse JSON Body]
-    
-    D --> E{Valid JSON?}
-    E -->|No| F[400 Bad Request]
-    E -->|Yes| G[Validate Request Schema]
-    
-    G --> H{Valid Schema?}
-    H -->|No| I[400 Validation Error]
-    H -->|Yes| J{Streaming Mode?}
-    
-    J -->|No| K[Standard Processing Path]
-    J -->|Yes| L[Streaming Service Handler]
-    
-    K --> M[Initialize Status Collector]
-    M --> N[Generate Context from Embedding Service]
-    N --> O[Generate Answer via Chat Service]
-    O --> P[Merge Status Updates]
-    P --> Q[Return Complete JSON Response]
-    
-    L --> R[Create SSE ReadableStream]
-    R --> S[Set SSE Headers]
-    S --> T[Process with Real-time Callbacks]
-    T --> U[Stream Status Events]
-    U --> V[Stream Final Result]
-    V --> W[Close Stream]
-    
-    X[Service Error] --> Y{Streaming?}
-    Y -->|No| Z[500 Internal Server Error]
-    Y -->|Yes| AA[Stream Error Event & Close]
-    
-    style A fill:#2d3748,stroke:#4a5568,color:#ffffff
-    style J fill:#2b6cb0,stroke:#3182ce,color:#ffffff
-    style L fill:#065f46,stroke:#059669,color:#ffffff
-    style K fill:#7c2d12,stroke:#dc2626,color:#ffffff
-    style X fill:#991b1b,stroke:#dc2626,color:#ffffff
-    style N fill:#7c3aed,stroke:#8b5cf6,color:#ffffff
-    style O fill:#ea580c,stroke:#f97316,color:#ffffff
+    A[HTTP Request] --> B[Request Validation Layer]
+    B --> C{Validation Success?}
+    C -->|No| D[400 Bad Request]
+    C -->|Yes| E[Strategy Selection Layer]
+
+    E --> F{Streaming Mode?}
+    F -->|No| G[Standard Processing Strategy]
+    F -->|Yes| H[Streaming Processing Strategy]
+
+    G --> I[Service Coordination Layer]
+    H --> J[Real-time Service Coordination]
+
+    I --> K[Context Generation Service]
+    J --> K
+    K --> L[Chat Processing Service]
+    L --> M{Tool Execution Required?}
+
+    M -->|Yes| N[Tool Chain Execution]
+    M -->|No| O[Response Assembly]
+    N --> P[Tool Integration]
+    P --> O
+
+    O --> Q{Response Strategy}
+    Q -->|Standard| R[JSON Response]
+    Q -->|Streaming| S[SSE Event Stream]
+
+    T[Error Detection] --> U[Error Handler Layer]
+    U --> V{Error Context}
+    V -->|Standard| W[HTTP Error Code]
+    V -->|Streaming| X[SSE Error Event]
+
+    style A fill:#1a237e,stroke:#303f9f,color:#ffffff
+    style B fill:#4a148c,stroke:#7b1fa2,color:#ffffff
+    style E fill:#e65100,stroke:#ff9800,color:#ffffff
+    style I fill:#0d47a1,stroke:#2196f3,color:#ffffff
+    style J fill:#2e7d32,stroke:#4caf50,color:#ffffff
+    style N fill:#ad1457,stroke:#e91e63,color:#ffffff
+    style T fill:#c62828,stroke:#f44336,color:#ffffff
+    style R fill:#1b5e20,stroke:#4caf50,color:#ffffff
+    style S fill:#004d40,stroke:#00695c,color:#ffffff
 ```
 
 ## Design Patterns
 
-### 1. Strategy Pattern
-- **Context**: Response processing mode selection
-- **Strategies**: Standard processing vs. Streaming service
-- **Implementation**: Route-based strategy selection via `streaming` boolean flag
-- **Benefits**: Clean separation of synchronous and asynchronous response handling
+### 1. Strategy Pattern - Processing Mode Selection
 
-### 2. Service Layer Pattern
-- **Purpose**: Encapsulate business logic in dedicated services
-- **Services**: Chat Service, Embedding Service, Streaming Service
-- **Benefits**: Loose coupling, reusability, and independent testing
+- **Context**: Endpoint request handler
+- **Strategies**: Standard synchronous vs. SSE streaming processing
+- **Implementation**: Dynamic strategy selection based on request parameters
+- **Benefits**: Clean separation of processing modes, extensible architecture
 
-### 3. Observer Pattern
-- **Subject**: Chat processing services
-- **Observers**: Status update callbacks
-- **Usage**: Real-time status notifications during query processing
-- **Implementation**: Callback functions passed through service layers
+### 2. Facade Pattern - Service Orchestration
 
-### 4. Chain of Responsibility
-- **Handlers**: Method validation → JSON parsing → Schema validation → Processing
-- **Early Exit**: Each handler can terminate the chain on failure
-- **Benefits**: Clean error handling and request preprocessing
+- **Purpose**: Unified interface to complex service ecosystem
+- **Implementation**: Single endpoint coordinating multiple backend services
+- **Benefits**: Simplified client integration, centralized coordination
 
-### 5. Facade Pattern
-- **Facade**: Chat endpoint handler
-- **Subsystems**: Validation, Chat Service, Embedding Service, Streaming Service
-- **Benefits**: Simplified interface for complex service orchestration
+### 3. Chain of Responsibility - Request Pipeline
 
-## Service Dependencies
+- **Chain**: Validation → Authentication → Processing → Response
+- **Implementation**: Sequential handler pipeline with early termination
+- **Benefits**: Modular request processing, clean error propagation
 
-The chat endpoint orchestrates multiple services:
+### 4. Observer Pattern - Status Monitoring
+
+- **Subject**: Service execution pipeline
+- **Observers**: Status tracking callbacks and SSE event streams
+- **Benefits**: Real-time progress visibility, decoupled monitoring
+
+### 5. Template Method Pattern - Response Lifecycle
+
+- **Template**: Standard request processing workflow
+- **Variations**: Response formatting (JSON vs. SSE events)
+- **Benefits**: Consistent processing flow, flexible output formats
+
+## Service Integration
+
+The endpoint coordinates multiple service layers through well-defined interfaces:
+
+### Service Dependency Flow
 
 ```typescript
-// Core Dependencies
-import { generateAnswer } from "../services/chat";           // Chat processing
-import { generateContext } from "../services/embedding";     // Vector search & context
-import { handleStreamingRequest } from "../services/streaming"; // SSE streaming
-import { validateRequest } from "../utils/validation";       // Request validation
-
-// Service Flow
-validateRequest() → generateContext() → generateAnswer() → handleStreamingRequest()
+HTTP Layer → Strategy Layer → Service Layer
+    ↓              ↓              ↓
+Validation → Mode Selection → Service Coordination
+    ↓              ↓              ↓
+Request → Standard/Streaming → Chat/Embedding/Streaming
 ```
 
-### Service Responsibilities
+### Core Service Integrations
 
-| Service | Responsibility | Location |
-|---------|---------------|----------|
-| **Chat Service** | AI conversation processing with memory | `services/chat/` |
-| **Embedding Service** | Vector generation and similarity search | `services/embedding/` |
-| **Streaming Service** | Real-time SSE response delivery | `services/streaming/` |
-| **Validation Utility** | Request schema validation | `utils/validation.ts` |
+| Service               | Layer         | Responsibility         | Integration Point          |
+| --------------------- | ------------- | ---------------------- | -------------------------- |
+| **Validation**        | HTTP          | Request sanitization   | `validateRequest()`        |
+| **Chat Service**      | Coordination  | AI response generation | `generateAnswer()`         |
+| **Embedding Service** | Coordination  | Context generation     | `generateContext()`        |
+| **Streaming Service** | Strategy      | Real-time delivery     | `handleStreamingRequest()` |
+| **Status Service**    | Cross-cutting | Progress tracking      | Status callbacks           |
 
-## Request/Response Structure
+## Response Strategies
 
-### Request Schema
+### Standard Response Strategy
+
+- **Use Case**: Traditional request/response interactions
+- **Processing**: Complete pipeline execution with result collection
+- **Output**: Structured JSON with full execution metadata
+
 ```typescript
-{
-  query: string;        // Required: User's chat query
-  streaming?: boolean;  // Optional: Enable SSE streaming (default: false)
+interface StandardResponse {
+  answer: string;
+  steps: ChatStatus[];
+  toolsUsed: string[];
+  executionTimeMs: number;
 }
 ```
 
-### Standard Response
+### Streaming Response Strategy
+
+- **Use Case**: Real-time progress monitoring and progressive delivery
+- **Processing**: Live event emission during pipeline execution
+- **Output**: Server-Sent Events with typed message structure
+
 ```typescript
-{
-  answer: string;       // AI-generated response
-  steps: ChatStatus[];  // Array of processing steps with status
-  metadata?: object;    // Additional response metadata
-}
-```
-
-### SSE Event Types
-```typescript
-// Status Update Event
-{
-  type: "status",
-  status: {
-    step: string;       // Processing step identifier
-    description: string; // Human-readable step description
-    status: "in-progress" | "completed" | "error";
-    timestamp: string;   // ISO timestamp
-  }
-}
-
-// Final Result Event
-{
-  type: "final",
-  result: ChatResponse  // Complete chat response object
-}
-
-// Error Event
-{
-  type: "error",
-  error: string        // Error message
-}
+// Event Types
+{ type: "status", status: ChatStatus }    // Progress updates
+{ type: "final", result: ChatResponse }   // Complete result
+{ type: "error", error: string }          // Error notifications
 ```
 
 ## Error Handling
 
-| Error Type | Status Code | Response | SSE Behavior |
-|------------|-------------|----------|--------------|
-| Invalid Method | 405 | Plain text | N/A |
-| Invalid JSON | 400 | Plain text | N/A |
-| Schema Validation | 400 | Plain text | N/A |
-| Service Error | 500 | Plain text | Error event + close |
-| Streaming Error | 500 | N/A | Error event + close |
+### Layered Error Recovery Architecture
 
-### Error Recovery Strategies
-- **Standard Mode**: Immediate error response with HTTP status codes
-- **Streaming Mode**: Error events sent via SSE before closing connection
-- **Service Failures**: Graceful degradation with informative error messages
+```
+HTTP Layer Errors → Client-facing HTTP status codes
+    ↓
+Strategy Layer Errors → Processing mode-specific handling
+    ↓
+Service Layer Errors → Graceful degradation with fallbacks
+    ↓
+Infrastructure Errors → System-level recovery mechanisms
+```
 
-## Usage Guide
+### Error Response Strategies
 
-### Standard Request (JSON Response)
+| Error Type              | Layer   | Standard Mode            | Streaming Mode        |
+| ----------------------- | ------- | ------------------------ | --------------------- |
+| **Validation**          | HTTP    | 400 Bad Request          | Connection rejected   |
+| **Authentication**      | HTTP    | 401/403 Unauthorized     | Connection rejected   |
+| **Service Unavailable** | Service | 503 with retry info      | Error event + close   |
+| **Processing Timeout**  | Service | 504 with partial results | Timeout event + close |
+| **Internal Error**      | Service | 500 with safe message    | Error event + close   |
+
+## Usage Examples
+
+### Basic Synchronous Request
+
 ```bash
 curl -X POST https://your-domain.netlify.app/.netlify/functions/chat \
   -H "Content-Type: application/json" \
-  -d '{"query": "What are the best restaurants in San Francisco?"}'
+  -d '{
+    "query": "What are the top 5 attractions in Paris?",
+    "streaming": false
+  }'
 ```
 
 **Response:**
+
 ```json
 {
-  "answer": "Based on the travel information available...",
+  "answer": "Here are the top 5 attractions in Paris: 1. Eiffel Tower...",
   "steps": [
     {
-      "step": "context_generation",
-      "description": "Generating context from vector database",
+      "step": 1,
+      "description": "Analyzing query and generating context",
       "status": "completed",
-      "timestamp": "2025-08-01T10:30:00Z"
+      "timestamp": 1722513600000
     },
     {
-      "step": "answer_generation", 
+      "step": 2,
       "description": "Generating AI response",
       "status": "completed",
-      "timestamp": "2025-08-01T10:30:02Z"
+      "timestamp": 1722513602000
     }
-  ]
+  ],
+  "toolsUsed": [],
+  "executionTimeMs": 2400
 }
 ```
 
-### Streaming Request (SSE)
+### Real-time Streaming Request
+
 ```bash
 curl -X POST https://your-domain.netlify.app/.netlify/functions/chat \
   -H "Content-Type: application/json" \
-  -d '{"query": "Plan a 3-day trip to SF", "streaming": true}' \
+  -d '{
+    "query": "Create a detailed 7-day itinerary for Japan",
+    "streaming": true
+  }' \
   --no-buffer
 ```
 
-**SSE Stream:**
+**SSE Response Stream:**
+
 ```
-data: {"type":"status","status":{"step":"context_generation","description":"Retrieving relevant travel information","status":"in-progress","timestamp":"2025-08-01T10:30:00Z"}}
+data: {"type":"status","status":{"step":1,"description":"Retrieving travel information for Japan","status":"executing","timestamp":1722513600000}}
 
-data: {"type":"status","status":{"step":"context_generation","description":"Context generated successfully","status":"completed","timestamp":"2025-08-01T10:30:01Z"}}
+data: {"type":"status","status":{"step":2,"description":"Analyzing cultural preferences and seasonal factors","status":"executing","timestamp":1722513601500}}
 
-data: {"type":"final","result":{"answer":"Here's your 3-day San Francisco itinerary...","steps":[...]}}
+data: {"type":"final","result":{"answer":"Here's your comprehensive 7-day Japan itinerary...","steps":[...],"executionTimeMs":4200}}
 ```
 
-## Frontend Integration
+### JavaScript Client Integration
 
-### Standard Mode (Fetch API)
 ```javascript
+// Standard Mode Client
 async function sendChatMessage(query) {
-  try {
-    const response = await fetch('/.netlify/functions/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    console.log('Answer:', result.answer);
-    console.log('Processing steps:', result.steps);
-    return result;
-  } catch (error) {
-    console.error('Chat request failed:', error);
-    throw error;
+  const response = await fetch("/.netlify/functions/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, streaming: false }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
   }
-}
-```
 
-### Streaming Mode (EventSource API)
-```javascript
-function sendStreamingChatMessage(query, onStatus, onComplete, onError) {
-  // Note: EventSource doesn't support POST requests directly
-  // This example shows the concept - you'd need to use fetch with ReadableStream
-  // or implement a custom SSE client
-  
-  const eventSource = new EventSource(`/.netlify/functions/chat?query=${encodeURIComponent(query)}&streaming=true`);
-  
-  eventSource.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      
-      switch (data.type) {
-        case 'status':
-          onStatus(data.status);
-          break;
-          
-        case 'final':
-          onComplete(data.result);
-          eventSource.close();
-          break;
-          
-        case 'error':
-          onError(new Error(data.error));
-          eventSource.close();
-          break;
-      }
-    } catch (parseError) {
-      onError(parseError);
-      eventSource.close();
-    }
-  };
-  
-  eventSource.onerror = (error) => {
-    onError(error);
-    eventSource.close();
-  };
-  
-  return () => eventSource.close();
+  return await response.json();
 }
-```
 
-### Custom SSE Client (Recommended)
-```javascript
-async function streamingChatRequest(query, onStatus, onComplete, onError) {
+// Streaming Mode Client
+async function streamChatMessage(query, onStatus, onComplete, onError) {
   try {
-    const response = await fetch('/.netlify/functions/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query, streaming: true })
+    const response = await fetch("/.netlify/functions/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, streaming: true }),
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP ${response.status}`);
     }
 
-    const reader = response.body?.getReader();
+    const reader = response.body.getReader();
     const decoder = new TextDecoder();
-
-    if (!reader) {
-      throw new Error('Response body is not readable');
-    }
 
     while (true) {
       const { done, value } = await reader.read();
-      
       if (done) break;
-      
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-      
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n");
+
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6));
-            
-            switch (data.type) {
-              case 'status':
-                onStatus(data.status);
-                break;
-              case 'final':
-                onComplete(data.result);
-                return;
-              case 'error':
-                onError(new Error(data.error));
-                return;
-            }
-          } catch (parseError) {
-            console.warn('Failed to parse SSE data:', parseError);
+        if (line.startsWith("data: ")) {
+          const data = JSON.parse(line.slice(6));
+
+          switch (data.type) {
+            case "status":
+              onStatus(data.status);
+              break;
+            case "final":
+              onComplete(data.result);
+              return;
+            case "error":
+              onError(new Error(data.error));
+              return;
           }
         }
       }
@@ -390,62 +337,170 @@ async function streamingChatRequest(query, onStatus, onComplete, onError) {
 }
 ```
 
-### React Hook Example
-```javascript
-import { useState, useCallback } from 'react';
+### React Hook Implementation
 
-function useChatStream() {
-  const [status, setStatus] = useState(null);
-  const [result, setResult] = useState(null);
+```javascript
+import { useState, useCallback } from "react";
+
+function useChatEndpoint() {
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState(null);
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  
+  const [currentStatus, setCurrentStatus] = useState(null);
+
   const sendMessage = useCallback(async (query, streaming = false) => {
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
-    setResult(null);
-    setStatus(null);
-    
-    if (streaming) {
-      await streamingChatRequest(
-        query,
-        (statusUpdate) => setStatus(statusUpdate),
-        (finalResult) => {
-          setResult(finalResult);
-          setIsLoading(false);
-        },
-        (err) => {
-          setError(err);
-          setIsLoading(false);
-        }
-      );
-    } else {
-      try {
+    setResponse(null);
+    setCurrentStatus(null);
+
+    try {
+      if (streaming) {
+        await streamChatMessage(
+          query,
+          (status) => setCurrentStatus(status),
+          (result) => {
+            setResponse(result);
+            setLoading(false);
+          },
+          (err) => {
+            setError(err.message);
+            setLoading(false);
+          }
+        );
+      } else {
         const result = await sendChatMessage(query);
-        setResult(result);
-        setIsLoading(false);
-      } catch (err) {
-        setError(err);
-        setIsLoading(false);
+        setResponse(result);
+        setLoading(false);
       }
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
     }
   }, []);
-  
+
   return {
     sendMessage,
-    status,
-    result,
+    loading,
+    response,
     error,
-    isLoading
+    currentStatus,
+    isStreaming: currentStatus !== null,
   };
+}
+
+// Usage in component
+function ChatComponent() {
+  const { sendMessage, loading, response, error, currentStatus } =
+    useChatEndpoint();
+
+  const handleSubmit = (query) => {
+    sendMessage(query, true); // Enable streaming
+  };
+
+  return (
+    <div>
+      {loading && currentStatus && (
+        <div>Status: {currentStatus.description}</div>
+      )}
+      {response && <div>Response: {response.answer}</div>}
+      {error && <div>Error: {error}</div>}
+    </div>
+  );
 }
 ```
 
-### Best Practices
+### Error Handling Patterns
 
-1. **Service Architecture**: Leverage the modular service design for maintainability
-2. **Error Handling**: Implement robust error handling for both sync and async modes
-3. **Status Updates**: Use status information to provide user feedback
-4. **Connection Management**: Always clean up SSE connections properly
-5. **Fallback Strategy**: Implement fallback to standard mode if streaming fails
-6. **Memory Management**: Clean up event listeners and close connections on unmount
+```javascript
+// Robust error handling with fallbacks
+async function robustChatRequest(query) {
+  const maxRetries = 3;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      return await sendChatMessage(query);
+    } catch (error) {
+      attempt++;
+
+      if (attempt >= maxRetries) {
+        return {
+          success: false,
+          answer:
+            "I'm currently experiencing technical difficulties. Please try again later.",
+          steps: [],
+          toolsUsed: [],
+          executionTimeMs: 0,
+        };
+      }
+
+      // Exponential backoff
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, attempt) * 1000)
+      );
+    }
+  }
+}
+```
+
+### Performance Monitoring
+
+```javascript
+// Monitor endpoint performance and health
+async function monitoredChatRequest(query) {
+  const startTime = performance.now();
+  const metrics = {
+    query: query.substring(0, 50) + "...",
+    startTime: Date.now(),
+    success: false,
+    duration: 0,
+    error: null,
+  };
+
+  try {
+    const response = await sendChatMessage(query);
+    metrics.success = true;
+    metrics.duration = performance.now() - startTime;
+
+    console.log("Chat Performance:", {
+      ...metrics,
+      responseLength: response.answer?.length || 0,
+      stepsCount: response.steps?.length || 0,
+      toolsUsed: response.toolsUsed?.length || 0,
+    });
+
+    return response;
+  } catch (error) {
+    metrics.error = error.message;
+    metrics.duration = performance.now() - startTime;
+
+    console.error("Chat Error:", metrics);
+    throw error;
+  }
+}
+```
+
+### Load Testing Script
+
+```bash
+#!/bin/bash
+# Load test the chat endpoint
+
+# Create test payload
+cat > test-query.json << EOF
+{
+  "query": "What are the best restaurants in Tokyo?",
+  "streaming": false
+}
+EOF
+
+# Run load test
+echo "Starting load test..."
+ab -n 50 -c 5 -T 'application/json' \
+   -p test-query.json \
+   https://your-domain.netlify.app/.netlify/functions/chat
+
+# Cleanup
+rm test-query.json
+```
