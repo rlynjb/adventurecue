@@ -13,15 +13,19 @@
     "ingest": "tsx bin/ingest.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.1",
+    "@ai-sdk/react": "^2.0.2",
     "@netlify/functions": "^4.1.10",
     "@netlify/neon": "^0.1.0",
+    "ai": "^5.0.2",
     "drizzle-orm": "^0.44.2",
     "next": "15.3.5",
     "openai": "^5.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "ts-node": "^10.9.2",
-    "tsx": "^4.20.3"
+    "tsx": "^4.20.3",
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

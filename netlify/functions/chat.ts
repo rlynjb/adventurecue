@@ -6,12 +6,6 @@ import { validateRequest, type ValidateRequest } from "../utils/validation";
 
 /**
  * Enhanced query handler with real-time status updates and memory support
- *
- * Memory functionality:
- * - Pass sessionId in request body to enable conversation memory
- * - Omit sessionId for stateless operation (original behavior)
- * - Empty string sessionId creates new session automatically
- * - Existing sessionId continues conversation in that session
  */
 const handler = async (req: Request) => {
   if (req.method !== "POST") {
