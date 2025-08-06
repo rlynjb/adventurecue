@@ -2,7 +2,20 @@ import { generateAnswer } from "../services/chat";
 import { ChatResponse, ChatStatus } from "../services/chat/types";
 import { generateContext } from "../services/embedding";
 import { handleStreamingRequest } from "../services/streaming";
-import { validateRequest, type ValidateRequest } from "../utils/validation";
+import { validateRequest } from "../utils/validation";
+import { RequestBody, ValidateRequest } from "./types";
+
+/**
+ * @todo
+ * clean up response object.
+ * maybe use AI SDK to format the response
+ * to match the expected UI format.
+ * This would allow us to use the same response structure
+ * for both streaming and non-streaming requests.
+ *
+ * modify handleStreamingRequest to return a AI SDK compatible response
+ * so we can use the same response structure for both streaming and non-streaming requests.
+ */
 
 /**
  * Enhanced query handler with real-time status updates and memory support
@@ -12,7 +25,7 @@ const handler = async (req: Request) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
-  let body;
+  let body: RequestBody;
   try {
     body = await req.json();
   } catch (e) {

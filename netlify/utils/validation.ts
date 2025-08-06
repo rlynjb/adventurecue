@@ -1,10 +1,4 @@
-import { QueryRequest } from "../services/query/types";
-
-export interface ValidateRequest {
-  isValid: boolean;
-  error?: string;
-  data?: QueryRequest;
-}
+import { RequestBody, ValidateRequest } from "../functions/types";
 
 /**
  * Handles input validation
@@ -13,8 +7,8 @@ export interface ValidateRequest {
  * @returns An object containing the validation result and any extracted data
  */
 export const validateRequest = (
-  body: unknown
-): { isValid: boolean; error?: string; data?: QueryRequest } => {
+  body: RequestBody | null | undefined
+): ValidateRequest => {
   if (!body || typeof body !== "object") {
     return { isValid: false, error: "Invalid request body" };
   }

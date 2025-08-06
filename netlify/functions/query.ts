@@ -1,5 +1,6 @@
 import { processQuery } from "../services/query";
-import { validateRequest, type ValidateRequest } from "../utils/validation";
+import { validateRequest } from "../utils/validation";
+import { ValidateRequest } from "./types";
 
 /**
  * /query handler for processing user queries
