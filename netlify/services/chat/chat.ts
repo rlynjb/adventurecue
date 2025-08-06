@@ -11,7 +11,7 @@ import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
 import { ChatStatusMessages, ChatStatusTracker } from "../status";
 import { executeToolCall, openAITools } from "../tools";
 import { callOpenAI } from "./helpers";
-import { ChatResponse, ChatStatus } from "./types";
+import { ChatStatus, NonStreamingResponse } from "./types";
 
 /**
  * Generates an answer to the user's query using OpenAI's model and tracks the status of each step.
@@ -26,14 +26,14 @@ import { ChatResponse, ChatStatus } from "./types";
  * @param similarEmbeddingContext - Context from embedding search
  * @param onStatusUpdate - Optional callback for status updates
  * @param sessionId - Optional session ID for memory functionality
- * @returns ChatResponse with optional sessionId for memory-enabled calls
+ * @returns NonStreamingResponse with optional sessionId for memory-enabled calls
  */
 export const generateAnswer = async (
   userQuery: string,
   similarEmbeddingContext: string,
   onStatusUpdate?: (status: ChatStatus) => void,
   sessionId?: string // Optional: enables memory functionality
-): Promise<ChatResponse> => {
+): Promise<NonStreamingResponse> => {
   const startTime = Date.now();
   const status = new ChatStatusTracker(onStatusUpdate);
   const tools: string[] = [];
@@ -187,7 +187,7 @@ export const generateAnswerWithMemory = async (
   similarEmbeddingContext: string,
   onStatusUpdate?: (status: ChatStatus) => void,
   existingSessionId?: string
-): Promise<ChatResponse> => {
+): Promise<NonStreamingResponse> => {
   // Pass empty string to enable memory, or use existing session
   const sessionId = existingSessionId || "";
   return generateAnswer(

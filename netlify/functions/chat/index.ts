@@ -1,9 +1,9 @@
-import { generateAnswer } from "../services/chat";
-import { ChatResponse, ChatStatus } from "../services/chat/types";
-import { generateContext } from "../services/embedding";
-import { handleStreamingRequest } from "../services/streaming";
-import { validateRequest } from "../utils/validation";
-import { RequestBody, ValidateRequest } from "./types";
+import { generateAnswer } from "../../services/chat";
+import { ChatStatus, NonStreamingResponse } from "../../services/chat/types";
+import { generateContext } from "../../services/embedding";
+import { handleStreamingRequest } from "../../services/streaming";
+import { RequestBody, ValidateRequest } from "../shared/types";
+import { validateRequest } from "./validation";
 
 /**
  * @todo
@@ -33,22 +33,23 @@ const handler = async (req: Request) => {
     return new Response("Invalid JSON payload", { status: 400 });
   }
 
-  // Validate request
   const validation: ValidateRequest = validateRequest(body);
   if (!validation.isValid) {
     return new Response(validation.error, { status: 400 });
   }
 
   try {
-    // SSE ROUTING: Check if client requested streaming response
-    // When streaming=true, use Server-Sent Events for real-time updates
     if (body.streaming) {
+      /**
+       * @todo see what data structure is expected here
+       * and how to format the response to match the expected UI format.
+       */
       return handleStreamingRequest(validation.data!);
     }
 
-    // NON-SSE PATH: Regular request with full status tracking
-    // This returns a complete response after all processing is done
-    const result: ChatResponse = await processQueryWithStatus(validation.data!);
+    const result: NonStreamingResponse = await processQueryWithStatus(
+      validation.data!
+    );
 
     return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" },
@@ -59,37 +60,29 @@ const handler = async (req: Request) => {
   }
 };
 
-/**
- * Process query with detailed status tracking and optional memory
- */
 async function processQueryWithStatus(data: {
   query: string;
   sessionId?: string;
-}): Promise<ChatResponse> {
+}): Promise<NonStreamingResponse> {
   const statusUpdates: ChatStatus[] = [];
 
-  // Status callback to collect all updates
   const onStatusUpdate = (status: ChatStatus) => {
     console.log(`[${status.step}] ${status.description} - ${status.status}`);
     statusUpdates.push(status);
   };
 
-  // This is a simplified version - in reality you'd want to get the context
-  // from your vector database first, then call generateAnswer
   const contextText = await generateContext(data);
 
-  // Pass sessionId to enable memory functionality if provided
   const result = await generateAnswer(
     data.query,
     contextText,
     onStatusUpdate,
-    data.sessionId // Enable memory if sessionId is provided
+    data.sessionId
   );
 
-  // Add any additional processing status if needed
   return {
     ...result,
-    steps: [...statusUpdates, ...result.steps], // Merge any additional status updates
+    steps: [...statusUpdates, ...result.steps],
   };
 }
 

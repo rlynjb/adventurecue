@@ -1,7 +1,7 @@
-import { RequestBody, ValidateRequest } from "../functions/types";
+import { RequestBody, ValidateRequest } from "../shared/types";
 
 /**
- * Handles input validation
+ * Handles input validation for query requests
  *
  * Validates the request body to ensure it contains a valid query string and optional top_k parameter.
  * @returns An object containing the validation result and any extracted data

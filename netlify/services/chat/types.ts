@@ -7,18 +7,18 @@ export interface ChatStatus {
   data?: unknown;
 }
 
-export interface ChatResponse {
+export interface NonStreamingResponse {
   success: boolean;
   response: string;
   steps: ChatStatus[];
   toolsUsed: string[];
   executionTimeMs: number;
-  sessionId?: string; // Add session ID to response
+  sessionId?: string;
 }
 
 // Memory-enabled chat input
 export interface ChatInput {
   userQuery: string;
-  sessionId?: string; // Optional - if not provided, new session is created
+  sessionId?: string;
   similarEmbeddingContext: string;
 }

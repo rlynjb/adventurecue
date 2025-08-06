@@ -1,12 +1,11 @@
-import { processQuery } from "../services/query";
-import { validateRequest } from "../utils/validation";
-import { ValidateRequest } from "./types";
+import { processText } from "../../services/ingestion";
+import { IngestValidateRequest } from "../shared/types";
+import { validateRequest } from "./validation";
 
 /**
- * /query handler for processing user queries
- * @deprecated use /chat endpoint instead
- * This handler is deprecated and will be removed in future versions.
- * Use the new query handler with status tracking instead.
+ * /ingest handler for processing text ingestion
+ *
+ * This handler processes text content and ingests it into the system.
  */
 const handler = async (req: Request) => {
   if (req.method !== "POST") {
@@ -22,15 +21,15 @@ const handler = async (req: Request) => {
   }
 
   // Validate request
-  const validation: ValidateRequest = validateRequest(body);
+  const validation: IngestValidateRequest = validateRequest(body);
   if (!validation.isValid) {
     return new Response(validation.error, { status: 400 });
   }
 
   try {
-    const answer = await processQuery(validation.data!);
+    const result = await processText(validation.data!.text);
 
-    return new Response(JSON.stringify({ answer }), {
+    return new Response(JSON.stringify({ result }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err: unknown) {
