@@ -1,4 +1,4 @@
-import { RequestBody, ValidateRequest } from "../shared/types";
+import { RequestBody, ValidateRequest } from "../../types";
 
 /**
  * Handles input validation for chat requests

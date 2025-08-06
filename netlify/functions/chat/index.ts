@@ -1,8 +1,12 @@
 import { generateAnswer } from "../../services/chat";
-import { ChatStatus, NonStreamingResponse } from "../../services/chat/types";
 import { generateContext } from "../../services/embedding";
 import { handleStreamingRequest } from "../../services/streaming";
-import { RequestBody, ValidateRequest } from "../shared/types";
+import {
+  ChatStatus,
+  NonStreamingResponse,
+  RequestBody,
+  ValidateRequest,
+} from "../../types";
 import { validateRequest } from "./validation";
 
 /**

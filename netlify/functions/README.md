@@ -11,9 +11,6 @@ netlify/functions/
 ├── chat/
 │   ├── index.ts                    # Main chat handler
 │   └── validation.ts               # Chat-specific validation logic
-├── query/
-│   ├── index.ts                    # Main query handler (deprecated)
-│   └── validation.ts               # Query-specific validation logic
 └── ingest/
     ├── index.ts                    # Main ingest handler
     └── validation.ts               # Ingest-specific validation logic
@@ -22,7 +19,6 @@ netlify/functions/
 ## Function Endpoints
 
 - **`/chat`** - Enhanced query handler with real-time status updates and memory support
-- **`/query`** - ⚠️ **DEPRECATED** - Legacy query handler (use `/chat` instead)
 - **`/ingest`** - Text ingestion handler for processing content
 
 ## Benefits of This Structure

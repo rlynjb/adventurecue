@@ -1,5 +1,5 @@
 import { processText } from "../../services/ingestion";
-import { IngestValidateRequest } from "../shared/types";
+import { IngestValidateRequest } from "../../types";
 import { validateRequest } from "./validation";
 
 /**

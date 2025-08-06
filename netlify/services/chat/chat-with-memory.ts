@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { ChatInput, ChatStatus, NonStreamingResponse } from "../../types";
 import {
   createChatSession,
   generateSessionId,
@@ -11,7 +12,6 @@ import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
 import { ChatStatusMessages, ChatStatusTracker } from "../status";
 import { executeToolCall, openAITools } from "../tools";
 import { callOpenAI } from "./helpers";
-import { ChatInput, ChatStatus, NonStreamingResponse } from "./types";
 
 /**
  * Memory-enabled chat function that saves conversation history

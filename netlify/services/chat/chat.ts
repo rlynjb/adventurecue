@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { ChatStatus, NonStreamingResponse } from "../../types";
 import {
   createChatSession,
   generateSessionId,
@@ -11,7 +12,6 @@ import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
 import { ChatStatusMessages, ChatStatusTracker } from "../status";
 import { executeToolCall, openAITools } from "../tools";
 import { callOpenAI } from "./helpers";
-import { ChatStatus, NonStreamingResponse } from "./types";
 
 /**
  * Generates an answer to the user's query using OpenAI's model and tracks the status of each step.

@@ -1,5 +1,5 @@
+import { ChatStatus } from "../../types";
 import { generateAnswer } from "../chat";
-import { ChatStatus } from "../chat/types";
 import { generateContext } from "../embedding";
 
 /**

@@ -1,4 +1,4 @@
-import { IngestRequestBody, IngestValidateRequest } from "../shared/types";
+import { IngestRequestBody, IngestValidateRequest } from "../../types/api";
 
 /**
  * Handles input validation for ingest requests

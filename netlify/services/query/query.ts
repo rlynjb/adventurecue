@@ -5,7 +5,7 @@ import { QueryRequest } from "./types";
 
 /**
  * Orchestrates the entire query pipeline
- *
+ * @deprecated use the new chat endpoint instead
  * @param queryData The query request containing the user's question and optional top_k parameter
  * @desc Processes the user's query by generating an embedding, finding similar embeddings in the database,
  * building a context prompt, and generating an answer using OpenAI's chat completion.
