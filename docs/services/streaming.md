@@ -3,46 +3,49 @@
 ## Table of Contents
 
 - [Overview](#overview)
-- [Architecture Layers](#architecture-layers)
-- [SSE Flow Diagram](#sse-flow-diagram)
-- [Design Patterns](#design-patterns)
-- [Protocol Implementation](#protocol-implementation)
-- [Stream Lifecycle](#stream-lifecycle)
+- [Architecture Overview](#architecture-overview)
+- [AI SDK Core Integration](#ai-sdk-core-integration)
+- [Stream Flow Diagram](#stream-flow-diagram)
+- [Implementation Details](#implementation-details)
+- [Status Tracking](#status-tracking)
+- [Memory Integration](#memory-integration)
 - [Error Handling](#error-handling)
 - [Usage Examples](#usage-examples)
 
 ## Overview
 
-The Streaming Service provides real-time response delivery capabilities using Server-Sent Events (SSE). It transforms traditional request-response patterns into live, progressive data streams with comprehensive status tracking and error recovery.
+The Streaming Service provides real-time response delivery using **AI SDK Core** for streaming text generation. It integrates with the existing memory system, embedding generation, and status tracking while maintaining compatibility with AI SDK UI components.
 
 **Location:** `netlify/services/streaming/`
 
 **Core Capabilities:**
 
-- Real-time Server-Sent Events (SSE) implementation
-- Live status updates during processing
-- Progressive response delivery
-- Robust connection management and error recovery
+- AI SDK Core streaming with `streamText()` function
+- AI SDK UI compatibility via `toTextStreamResponse()`
+- Integrated status tracking with real-time progress updates
+- Memory system integration for conversation history
+- Embedding-based context generation
+- Robust error handling and recovery
 
-## Architecture Layers
+## Architecture Overview
 
-The streaming service implements a layered architecture for reliable real-time communication:
+The streaming service now implements a simplified architecture built on AI SDK Core:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                🌊 Stream Interface Layer                │
+│                � AI SDK Core Integration               │
 │  ┌─────────────────┐    ┌─────────────────────────────┐ │
-│  │ SSE Handler     │────│ Response Headers            │ │
-│  │ (Entry Point)   │    │ (Protocol Setup)            │ │
+│  │ streamText()    │────│ toTextStreamResponse()      │ │
+│  │ (Core Function) │    │ (UI Compatibility)          │ │
 │  └─────────────────┘    └─────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────┐
-│               📡 Stream Management Layer                │
+│               � Status & Memory Integration            │
 │  ┌─────────────────┐    ┌─────────────────────────────┐ │
-│  │ ReadableStream  │────│ Event Formatting            │ │
-│  │ Controller      │    │ (SSE Protocol)              │ │
+│  │ ChatStatus      │────│ Memory System               │ │
+│  │ Tracker         │    │ (Session & History)         │ │
 │  └─────────────────┘    └─────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
                               │
@@ -50,486 +53,612 @@ The streaming service implements a layered architecture for reliable real-time c
 ┌─────────────────────────────────────────────────────────┐
 │                🔧 Service Integration Layer             │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐ │
-│  │ Chat        │ │ Embedding   │ │ Status Tracking     │ │
-│  │ Service     │ │ Service     │ │ Callbacks           │ │
+│  │ OpenAI      │ │ Embedding   │ │ Context             │ │
+│  │ GPT-4 Turbo │ │ Service     │ │ Generation          │ │
 │  └─────────────┘ └─────────────┘ └─────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## SSE Flow Diagram
+## AI SDK Core Integration
+
+### Core Dependencies
+
+```typescript
+import { openai } from "@ai-sdk/openai";
+import { CoreMessage, streamText } from "ai";
+```
+
+The service leverages AI SDK Core's `streamText()` function which provides:
+
+- **Native Streaming**: Built-in streaming capabilities optimized for LLM responses
+- **Model Integration**: Direct OpenAI GPT-4 Turbo integration
+- **Type Safety**: Full TypeScript support with `CoreMessage` types
+- **UI Compatibility**: Seamless integration with AI SDK UI components
+
+### Stream Response Format
+
+The service returns an AI SDK UI compatible response using `toTextStreamResponse()`:
+
+```typescript
+return result.toTextStreamResponse({
+  headers: {
+    "x-session-id": currentSessionId || "",
+    "x-status-steps": JSON.stringify(status.getSteps()),
+  },
+});
+```
+
+This ensures compatibility with AI SDK UI hooks like `useChat` while providing custom headers for session tracking and status information.
+
+## Stream Flow Diagram
 
 ```mermaid
 graph TD
-    A[handleStreamingRequest] --> B[Stream Interface Layer]
-    B --> C[Create ReadableStream]
-    C --> D[Set SSE Headers]
+    A[handleStreamingRequest] --> B[Initialize Status Tracker]
+    B --> C[Memory System Check]
+    C --> D{Session Exists?}
 
-    D --> E[Stream Management Layer]
-    E --> F[Initialize Stream Controller]
-    F --> G[Setup Status Callback]
+    D -->|No| E[Create New Session]
+    D -->|Yes| F[Load Conversation History]
+    E --> G[Save User Message]
+    F --> G
 
-    G --> H[Service Integration Layer]
-    H --> I[Context Generation Service]
-    I --> J[Chat Processing Service]
+    G --> H[Generate Context from Embeddings]
+    H --> I[Build CoreMessage Array]
+    I --> J[Initialize AI SDK streamText]
 
-    J --> K{Processing Steps}
-    K --> L[Status Event Generation]
-    L --> M[SSE Protocol Formatting]
-    M --> N[Stream Event Transmission]
+    J --> K[OpenAI GPT-4 Turbo]
+    K --> L[Real-time Token Streaming]
+    L --> M[Status Updates via Callback]
 
-    N --> O{More Events?}
-    O -->|Yes| K
-    O -->|No| P[Final Result Event]
+    M --> N[toTextStreamResponse]
+    N --> O[Client Receives Stream]
 
-    P --> Q[Stream Completion]
-    Q --> R[Connection Close]
+    P[onFinish Callback] --> Q[Save Assistant Response]
+    Q --> R[Update Final Status]
 
-    S[Error Detection] --> T[Error Event Formatting]
-    T --> U[SSE Error Transmission]
-    U --> V[Graceful Stream Termination]
+    S[Error Detection] --> T[Status Failed Update]
+    T --> U[Error Response with Status]
 
     style A fill:#1a237e,stroke:#303f9f,color:#ffffff
-    style B fill:#4a148c,stroke:#7b1fa2,color:#ffffff
-    style E fill:#e65100,stroke:#ff9800,color:#ffffff
-    style H fill:#0d47a1,stroke:#2196f3,color:#ffffff
-    style L fill:#2e7d32,stroke:#4caf50,color:#ffffff
+    style J fill:#4a148c,stroke:#7b1fa2,color:#ffffff
+    style K fill:#e65100,stroke:#ff9800,color:#ffffff
+    style L fill:#0d47a1,stroke:#2196f3,color:#ffffff
+    style M fill:#2e7d32,stroke:#4caf50,color:#ffffff
     style S fill:#c62828,stroke:#f44336,color:#ffffff
-    style Q fill:#1b5e20,stroke:#4caf50,color:#ffffff
-    style V fill:#ad1457,stroke:#e91e63,color:#ffffff
+    style N fill:#1b5e20,stroke:#4caf50,color:#ffffff
+    style U fill:#ad1457,stroke:#e91e63,color:#ffffff
 ```
 
-## Design Patterns
+## Implementation Details
 
-### 1. Observer Pattern - Status Broadcasting
-
-- **Subject**: Service execution pipeline
-- **Observers**: SSE status callbacks and client connections
-- **Implementation**: Real-time event emission during processing
-- **Benefits**: Decoupled monitoring, multiple subscriber support
-
-### 2. Strategy Pattern - Event Formatting
-
-- **Context**: Stream event processing
-- **Strategies**: Status events, final events, error events
-- **Implementation**: Type-based event formatting and transmission
-- **Benefits**: Flexible event types, extensible protocol
-
-### 3. Template Method Pattern - Stream Lifecycle
-
-- **Template**: SSE connection workflow
-- **Steps**: Initialize → Process → Stream → Complete/Error → Close
-- **Benefits**: Consistent stream management, predictable lifecycle
-
-### 4. Facade Pattern - Streaming Interface
-
-- **Purpose**: Simplified interface to complex SSE implementation
-- **Implementation**: Single `handleStreamingRequest` function
-- **Benefits**: Easy integration, hidden complexity
-
-### 5. Producer-Consumer Pattern - Data Flow
-
-- **Producer**: Service processing pipeline
-- **Consumer**: SSE stream transmission
-- **Implementation**: ReadableStream with controlled data flow
-- **Benefits**: Backpressure handling, efficient memory usage
-
-## Protocol Implementation
-
-### SSE Protocol Specification
-
-The service implements the Server-Sent Events specification with proper formatting and headers:
+### Function Signature
 
 ```typescript
-// Required Headers
-{
-  "Content-Type": "text/event-stream",
-  "Cache-Control": "no-cache",
-  "Connection": "keep-alive"
+export async function handleStreamingRequest(
+  data: {
+    query: string;
+    sessionId?: string;
+  },
+  onStatusUpdate?: (status: ChatStatus) => void
+): Promise<Response>;
+```
+
+### Core Implementation
+
+```typescript
+// 1. Status tracking initialization
+const status = new ChatStatusTracker(onStatusUpdate);
+
+// 2. Memory system integration
+if (data.sessionId !== undefined) {
+  // Create or load session
+  // Save user message
+  // Load conversation history
 }
 
-// Event Format
-data: {"type":"status","status":{...}}\n\n
-data: {"type":"final","result":{...}}\n\n
-data: {"type":"error","error":"..."}\n\n
+// 3. Context generation
+const contextText = await generateContext(data);
+
+// 4. Message array construction
+const messages: CoreMessage[] = [
+  { role: "system", content: TRAVEL_ASSISTANT_SYSTEM_PROMPT },
+  ...conversationHistory,
+  { role: "user", content: data.query },
+  { role: "assistant", content: contextText },
+];
+
+// 5. AI SDK Core streaming
+const result = await streamText({
+  model: openai("gpt-4-turbo"),
+  messages,
+  temperature: 0.7,
+  onFinish: async (result) => {
+    // Save assistant response to memory
+    if (currentSessionId && result.text) {
+      await saveChatMessage({
+        session_id: currentSessionId,
+        role: "assistant",
+        content: result.text,
+      });
+    }
+  },
+});
+
+// 6. Return AI SDK UI compatible response
+return result.toTextStreamResponse({
+  headers: {
+    "x-session-id": currentSessionId || "",
+    "x-status-steps": JSON.stringify(status.getSteps()),
+  },
+});
 ```
 
-### Event Types Architecture
+### Key Features
 
-| Event Type | Purpose            | Data Structure        | Client Action         |
-| ---------- | ------------------ | --------------------- | --------------------- |
-| **status** | Progress updates   | `ChatStatus` object   | Update UI progress    |
-| **final**  | Complete result    | `ChatResponse` object | Display result, close |
-| **error**  | Error notification | Error message string  | Handle error, close   |
+1. **AI SDK Core Integration**: Uses `streamText()` for native streaming
+2. **Memory System**: Automatic session management and conversation history
+3. **Context Generation**: Embedding-based context from knowledge base
+4. **Status Tracking**: Real-time progress updates via callback system
+5. **Error Handling**: Comprehensive error catching with status updates
+6. **UI Compatibility**: Returns AI SDK UI compatible streaming response
 
-## Stream Lifecycle
+## Status Tracking
 
-### Connection Phases
+### Status Integration
 
+The service integrates with the existing `ChatStatusTracker` system:
+
+```typescript
+const status = new ChatStatusTracker(onStatusUpdate);
+
+// Status updates during processing
+status.executing(1, ChatStatusMessages.ANALYZING_QUERY);
+status.completed(1, "Chat session created");
+status.executing(2, "Generating context from embeddings");
+status.completed(2, "Context generated");
+status.executing(3, ChatStatusMessages.WAITING_OPENAI);
+status.completed(3, ChatStatusMessages.RESPONSE_COMPLETE);
 ```
-Initialize → Process → Stream → Complete → Cleanup
-     ↓         ↓        ↓        ↓         ↓
-   Setup    Generate  Transmit  Finalize  Close
-  Headers   Events    Events    Result   Stream
+
+### Status Messages
+
+The service uses predefined status messages from `ChatStatusMessages`:
+
+- `ANALYZING_QUERY`: Initial query analysis
+- `WAITING_OPENAI`: Waiting for OpenAI response
+- `RESPONSE_COMPLETE`: Streaming completion
+- `ERROR_OCCURRED`: Error handling
+
+### Custom Headers
+
+Status information is included in response headers:
+
+```typescript
+{
+  "x-session-id": currentSessionId || "",
+  "x-status-steps": JSON.stringify(status.getSteps())
+}
 ```
 
-### State Management
+## Memory Integration
 
-1. **Initialization**: ReadableStream creation and header setup
-2. **Processing**: Service coordination with status callbacks
-3. **Streaming**: Real-time event transmission to client
-4. **Completion**: Final result delivery or error handling
-5. **Cleanup**: Connection termination and resource cleanup
+### Session Management
 
-### Memory Management
+The service automatically handles chat sessions:
 
-- **Stream Control**: Automatic backpressure handling
-- **Event Buffering**: Minimal memory footprint with immediate transmission
-- **Resource Cleanup**: Automatic garbage collection on stream closure
+```typescript
+// Create new session if none exists
+if (!currentSessionId) {
+  currentSessionId = generateSessionId();
+  const title = generateSessionTitle(data.query);
+  await createChatSession({
+    session_id: currentSessionId,
+    title,
+  });
+}
+
+// Save user message
+await saveChatMessage({
+  session_id: currentSessionId,
+  role: "user",
+  content: data.query,
+});
+```
+
+### Conversation History
+
+Recent conversation history is loaded and included in the context:
+
+```typescript
+const conversationHistory = currentSessionId
+  ? (await getRecentMessages(currentSessionId, 8)).map((msg) => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content,
+    }))
+  : [];
+```
+
+### Response Persistence
+
+Assistant responses are automatically saved after streaming completion:
+
+```typescript
+onFinish: async (result) => {
+  if (currentSessionId && result.text) {
+    await saveChatMessage({
+      session_id: currentSessionId,
+      role: "assistant",
+      content: result.text,
+    });
+  }
+};
+```
 
 ## Error Handling
 
 ### Error Recovery Strategy
 
 ```
-Service Errors → Error Event Emission → Graceful Stream Termination
-     ↓                    ↓                        ↓
-  Error Detection → SSE Error Format → Connection Close
+Service Errors → Status Update → Error Response → Client Notification
+     ↓               ↓              ↓                ↓
+  Error Detection → Status Failed → JSON Error → Connection Close
+```
+
+### Error Implementation
+
+```typescript
+try {
+  // Main streaming logic...
+} catch (error) {
+  status.failed(-1, ChatStatusMessages.ERROR_OCCURRED(String(error)), {
+    error,
+  });
+  return new Response(
+    JSON.stringify({
+      error: error instanceof Error ? error.message : "Unknown error",
+      steps: status.getSteps(),
+    }),
+    {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+}
 ```
 
 ### Error Categories
 
-| Error Type          | Source                  | Handling Strategy      | Client Impact          |
-| ------------------- | ----------------------- | ---------------------- | ---------------------- |
-| **Service Failure** | Chat/Embedding services | Error event + close    | Receives error message |
-| **Stream Error**    | ReadableStream issues   | Immediate termination  | Connection lost        |
-| **Protocol Error**  | SSE formatting          | Error event + close    | Receives error details |
-| **Network Error**   | Client connection       | Auto-detection + close | Connection timeout     |
+| Error Type              | Source                  | Handling Strategy         | Response Format       |
+| ----------------------- | ----------------------- | ------------------------- | --------------------- |
+| **Memory System Error** | Session/message storage | Status update + JSON      | 500 with error object |
+| **Embedding Error**     | Context generation      | Status update + JSON      | 500 with error object |
+| **AI SDK Error**        | streamText() failure    | Status update + JSON      | 500 with error object |
+| **Network Error**       | OpenAI API connectivity | Automatic retry in AI SDK | Handled by AI SDK     |
 
-### Graceful Degradation
+### Error Response Format
 
-- **Partial Results**: Send available data before error termination
-- **Error Context**: Include helpful error information in events
-- **Connection Recovery**: Allow client-side reconnection strategies
-- **Fallback Options**: Graceful failure with actionable information
+```typescript
+{
+  "error": "Error message string",
+  "steps": [
+    {
+      "step": 1,
+      "status": "completed",
+      "description": "Chat session created"
+    },
+    {
+      "step": -1,
+      "status": "failed",
+      "description": "Error occurred: [error message]",
+      "data": { "error": "..." }
+    }
+  ]
+}
+```
 
 ## Usage Examples
 
-### Basic Streaming Request
+### Basic Integration with Netlify Function
 
 ```typescript
-import { handleStreamingRequest } from "@/netlify/services/streaming";
+// netlify/functions/chat/index.ts
+import { handleStreamingRequest } from "../../services/streaming";
 
-async function basicStreamingExample() {
-  const streamingData = { query: "What are the best restaurants in Tokyo?" };
-
-  // Create streaming response
-  const response = await handleStreamingRequest(streamingData);
-
-  // Response is ready for HTTP transmission
-  return response;
-}
-```
-
-### Integration with Endpoint
-
-```typescript
-// In netlify/functions/chat.ts
-import { handleStreamingRequest } from "../services/streaming";
-
-const handler = async (req: Request) => {
+export const handler = async (req: Request) => {
   const body = await req.json();
 
-  // Check if streaming is requested
-  if (body.streaming) {
-    return handleStreamingRequest({ query: body.query });
-  }
+  // Status callback for real-time updates
+  const onStatusUpdate = (status: ChatStatus) => {
+    console.log(`Step ${status.step}: ${status.description}`);
+  };
 
-  // Handle standard request...
+  // Handle streaming request
+  return handleStreamingRequest(
+    {
+      query: body.query,
+      sessionId: body.sessionId,
+    },
+    onStatusUpdate
+  );
 };
 ```
 
-### Client-Side SSE Consumption
+### Frontend Integration with Custom Streaming
 
-```javascript
-// Browser EventSource API
-function consumeStreamingResponse(query) {
-  const eventSource = new EventSource(
-    `/api/chat?query=${encodeURIComponent(query)}&streaming=true`
+```typescript
+// Frontend implementation without AI SDK UI hooks
+async function sendStreamingMessage(query: string, sessionId?: string) {
+  const response = await fetch("/.netlify/functions/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query,
+      sessionId,
+      streaming: true,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  // Extract session ID and status from headers
+  const responseSessionId = response.headers.get("x-session-id");
+  const statusSteps = JSON.parse(
+    response.headers.get("x-status-steps") || "[]"
   );
 
-  eventSource.onmessage = (event) => {
-    const data = JSON.parse(event.data);
+  console.log("Status steps:", statusSteps);
 
-    switch (data.type) {
-      case "status":
-        console.log("Progress:", data.status.description);
-        updateProgressUI(data.status);
-        break;
+  // Read streaming response
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("No response body");
 
-      case "final":
-        console.log("Complete:", data.result.answer);
-        displayFinalResult(data.result);
-        eventSource.close();
-        break;
+  const decoder = new TextDecoder();
+  let content = "";
 
-      case "error":
-        console.error("Error:", data.error);
-        handleError(data.error);
-        eventSource.close();
-        break;
-    }
-  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
 
-  eventSource.onerror = (error) => {
-    console.error("Stream error:", error);
-    eventSource.close();
-  };
+    const chunk = decoder.decode(value);
+    content += chunk;
 
-  return eventSource;
-}
-```
-
-### Custom SSE Client Implementation
-
-```javascript
-// Fetch API with ReadableStream
-async function customSSEClient(query, onStatus, onComplete, onError) {
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, streaming: true }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      const lines = chunk.split("\n");
-
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          try {
-            const data = JSON.parse(line.slice(6));
-
-            switch (data.type) {
-              case "status":
-                onStatus(data.status);
-                break;
-              case "final":
-                onComplete(data.result);
-                return;
-              case "error":
-                onError(new Error(data.error));
-                return;
-            }
-          } catch (parseError) {
-            console.warn("Failed to parse SSE data:", parseError);
-          }
-        }
-      }
-    }
-  } catch (error) {
-    onError(error);
+    // Update UI with streaming content
+    updateMessageDisplay(content);
   }
+
+  return { content, sessionId: responseSessionId };
 }
 ```
 
-### React Streaming Hook
+### React Component with AI SDK Core Streaming
 
-```javascript
-import { useState, useEffect, useRef } from "react";
+```jsx
+"use client";
 
-function useStreamingChat() {
-  const [status, setStatus] = useState(null);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const eventSourceRef = useRef(null);
+import { useState } from "react";
 
-  const startStream = async (query) => {
-    setIsStreaming(true);
-    setError(null);
-    setResult(null);
-    setStatus(null);
+export default function StreamingChat() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-    await customSSEClient(
-      query,
-      (statusUpdate) => setStatus(statusUpdate),
-      (finalResult) => {
-        setResult(finalResult);
-        setIsStreaming(false);
-      },
-      (err) => {
-        setError(err.message);
-        setIsStreaming(false);
-      }
-    );
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
 
-  const stopStream = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      setIsStreaming(false);
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
+    const userMessage = {
+      id: Date.now().toString(),
+      role: "user",
+      content: input.trim(),
     };
-  }, []);
 
-  return {
-    startStream,
-    stopStream,
-    status,
-    result,
-    error,
-    isStreaming,
-  };
-}
-```
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
 
-### Error Handling Patterns
-
-```javascript
-// Robust streaming with retries
-async function robustStreamingClient(query, maxRetries = 3) {
-  let attempt = 0;
-
-  while (attempt < maxRetries) {
     try {
-      await customSSEClient(
-        query,
-        (status) => console.log("Status:", status.description),
-        (result) => console.log("Result:", result.answer),
-        (error) => {
-          console.error("Stream error:", error);
-          throw error;
-        }
-      );
-      return; // Success
-    } catch (error) {
-      attempt++;
+      const response = await fetch("/.netlify/functions/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: userMessage.content,
+          streaming: true,
+        }),
+      });
 
-      if (attempt >= maxRetries) {
-        console.error("Max retries exceeded:", error);
-        throw error;
+      if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      const assistantMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "",
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.role === "assistant") {
+            lastMessage.content += chunk;
+          }
+          return newMessages;
+        });
       }
-
-      // Exponential backoff
-      const delay = Math.pow(2, attempt) * 1000;
-      console.log(`Retry ${attempt} after ${delay}ms`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
+    } catch (error) {
+      console.error("Streaming error:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
+
+  return (
+    <div className="flex flex-col h-screen max-w-2xl mx-auto">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`p-4 rounded ${
+              message.role === "user"
+                ? "bg-blue-600 text-white ml-8"
+                : "bg-gray-800 text-white mr-8"
+            }`}
+          >
+            <div className="font-semibold mb-2">
+              {message.role === "user" ? "You" : "Assistant"}
+            </div>
+            <div>{message.content}</div>
+          </div>
+        ))}
+      </div>
+
+      <form onSubmit={handleSubmit} className="p-4 flex space-x-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask me anything..."
+          disabled={isLoading}
+          className="flex-1 p-3 border rounded"
+        />
+        <button
+          type="submit"
+          disabled={isLoading || !input.trim()}
+          className="px-6 py-3 bg-blue-600 text-white rounded"
+        >
+          Send
+        </button>
+      </form>
+    </div>
+  );
 }
 ```
 
-### Stream Monitoring and Analytics
+### Using with AI SDK UI Components
 
-```javascript
-// Monitor streaming performance
-class StreamingAnalytics {
-  constructor() {
-    this.metrics = {
-      totalStreams: 0,
-      successfulStreams: 0,
-      errorStreams: 0,
-      averageStreamDuration: 0,
-      totalEvents: 0,
-    };
-  }
+While the service returns AI SDK UI compatible responses, direct integration with `useChat` may require additional configuration:
 
-  trackStream(query) {
+```typescript
+// Potential integration with useChat hook
+import { useChat } from "ai/react";
+
+export default function AISDKChat() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: "/.netlify/functions/chat",
+    streamMode: "text", // Use text streaming mode
+    onResponse: (response) => {
+      // Access custom headers
+      const sessionId = response.headers.get("x-session-id");
+      const statusSteps = response.headers.get("x-status-steps");
+      console.log("Session ID:", sessionId);
+      console.log("Status:", statusSteps);
+    },
+  });
+
+  return (
+    <div>
+      {messages.map((message) => (
+        <div key={message.id}>
+          <strong>{message.role}:</strong> {message.content}
+        </div>
+      ))}
+
+      <form onSubmit={handleSubmit}>
+        <input value={input} onChange={handleInputChange} />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  );
+}
+```
+
+### Testing the Streaming Endpoint
+
+```bash
+#!/bin/bash
+# Test AI SDK Core streaming endpoint
+
+echo "Testing AI SDK Core streaming..."
+
+curl -N -X POST http://localhost:8888/.netlify/functions/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What are the best restaurants in Tokyo?",
+    "streaming": true
+  }' \
+  --no-buffer | while IFS= read -r line; do
+    echo "Received: $line"
+  done
+```
+
+### Monitoring and Status Tracking
+
+```typescript
+// Enhanced status monitoring
+class StreamingMonitor {
+  private sessions = new Map<string, any>();
+
+  async monitorStream(query: string) {
     const startTime = Date.now();
-    let eventCount = 0;
+    let statusUpdates = [];
 
-    this.metrics.totalStreams++;
+    const onStatusUpdate = (status: ChatStatus) => {
+      statusUpdates.push({
+        timestamp: Date.now(),
+        step: status.step,
+        description: status.description,
+        status: status.status,
+      });
 
-    return customSSEClient(
-      query,
-      (status) => {
-        eventCount++;
-        this.metrics.totalEvents++;
-        console.log(`[${eventCount}] ${status.description}`);
-      },
-      (result) => {
-        const duration = Date.now() - startTime;
-        this.metrics.successfulStreams++;
-        this.updateAverageDuration(duration);
-
-        console.log("Stream completed:", {
-          duration: `${duration}ms`,
-          events: eventCount,
-          success: true,
-        });
-      },
-      (error) => {
-        const duration = Date.now() - startTime;
-        this.metrics.errorStreams++;
-
-        console.error("Stream failed:", {
-          duration: `${duration}ms`,
-          events: eventCount,
-          error: error.message,
-        });
-      }
-    );
-  }
-
-  updateAverageDuration(duration) {
-    const total =
-      this.metrics.averageStreamDuration * (this.metrics.successfulStreams - 1);
-    this.metrics.averageStreamDuration =
-      (total + duration) / this.metrics.successfulStreams;
-  }
-
-  getMetrics() {
-    return {
-      ...this.metrics,
-      successRate:
-        (
-          (this.metrics.successfulStreams / this.metrics.totalStreams) *
-          100
-        ).toFixed(2) + "%",
-      averageEvents: (
-        this.metrics.totalEvents / this.metrics.totalStreams
-      ).toFixed(2),
+      console.log(`[${status.step}] ${status.description}`);
     };
+
+    try {
+      const response = await handleStreamingRequest({ query }, onStatusUpdate);
+
+      const sessionId = response.headers.get("x-session-id");
+      const finalSteps = JSON.parse(
+        response.headers.get("x-status-steps") || "[]"
+      );
+
+      this.sessions.set(sessionId, {
+        query,
+        startTime,
+        duration: Date.now() - startTime,
+        statusUpdates,
+        finalSteps,
+        success: true,
+      });
+
+      return { response, sessionId, statusUpdates };
+    } catch (error) {
+      console.error("Stream monitoring failed:", error);
+      return { error, statusUpdates };
+    }
+  }
+
+  getSessionMetrics(sessionId: string) {
+    return this.sessions.get(sessionId);
+  }
+
+  getAllSessions() {
+    return Array.from(this.sessions.values());
   }
 }
 
 // Usage
-const analytics = new StreamingAnalytics();
-analytics.trackStream("Plan a trip to Japan");
-```
-
-### Testing SSE Endpoints
-
-```bash
-#!/bin/bash
-# Test streaming endpoint with curl
-
-echo "Testing SSE endpoint..."
-
-curl -N -X POST http://localhost:8888/.netlify/functions/chat \
-  -H "Content-Type: application/json" \
-  -d '{"query": "What are the best attractions in Paris?", "streaming": true}' \
-  --no-buffer | while IFS= read -r line; do
-    if [[ $line == data:* ]]; then
-      echo "Event: ${line#data: }"
-    fi
-  done
+const monitor = new StreamingMonitor();
+const result = await monitor.monitorStream("Plan a trip to Japan");
+console.log("Session metrics:", monitor.getSessionMetrics(result.sessionId));
 ```
