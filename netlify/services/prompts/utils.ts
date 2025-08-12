@@ -1,4 +1,4 @@
-import { type EmbeddingRow } from "../embedding/types";
+import { type EmbeddingRow } from "../../types";
 
 /**
  * Formats context text from database results

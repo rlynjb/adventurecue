@@ -1,6 +1,6 @@
-import { FileData } from "../services/ingestion/types";
 import { readdir, readFile } from "fs/promises";
 import path from "path";
+import { FileData } from "../types";
 
 /**
  * Recursively walk a directory, yielding file paths with specified extensions

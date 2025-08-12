@@ -1,15 +1,11 @@
-import { getDrizzleClient } from "../../clients";
-import { generateEmbedding } from "../embedding";
-import {
-  EmbeddingData,
-  IngestionConfig,
-  ProcessingResult,
-} from "./types";
-import { readFileData, walkDirectory } from "../../utils/file-system";
-import { rateLimitDelay } from "../../utils/rate-limiting";
-import { embeddings } from "../../../db/schema";
 import { sql } from "drizzle-orm";
 import path from "path";
+import { embeddings } from "../../../db/schema";
+import { getDrizzleClient } from "../../clients";
+import { EmbeddingData, IngestionConfig, ProcessingResult } from "../../types";
+import { readFileData, walkDirectory } from "../../utils/file-system";
+import { rateLimitDelay } from "../../utils/rate-limiting";
+import { generateEmbedding } from "../embedding";
 
 export const processText = async (text: string): Promise<unknown> => {
   try {

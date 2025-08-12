@@ -2,7 +2,7 @@
 export { handleStreamingRequest } from "./sse-handler";
 
 // Types (to be expanded in future phases)
-export type { ChatStatus } from "../chat/types";
+export type { ChatStatus } from "../../types";
 
 /**
  * Streaming Service

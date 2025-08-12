@@ -1,13 +1,11 @@
-import { processText } from "../services/ingestion";
+import { processText } from "../../services/ingestion";
+import { IngestValidateRequest } from "../../types";
+import { validateRequest } from "./validation";
 
 /**
- * @NOTE
- * copy how query.ts is structured
- * - method validation
- * - JSON parsing
- * - request validation
- * - process ingestion
- * - return response
+ * /ingest handler for processing text ingestion
+ *
+ * This handler processes text content and ingests it into the system.
  */
 const handler = async (req: Request) => {
   if (req.method !== "POST") {
@@ -22,11 +20,14 @@ const handler = async (req: Request) => {
     return new Response("Invalid JSON payload", { status: 400 });
   }
 
-  if (typeof body.text !== "string") {
-    return new Response("Invalid request body", { status: 400 });
+  // Validate request
+  const validation: IngestValidateRequest = validateRequest(body);
+  if (!validation.isValid) {
+    return new Response(validation.error, { status: 400 });
   }
+
   try {
-    const result = await processText(body.text);
+    const result = await processText(validation.data!.text);
 
     return new Response(JSON.stringify({ result }), {
       headers: { "Content-Type": "application/json" },

@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 import { ingestFiles } from "../netlify/services/ingestion";
-import { IngestionConfig } from "../netlify/services/ingestion/types";
+import { IngestionConfig } from "../netlify/types";
 
 // Environment validation
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
@@ -19,14 +19,14 @@ if (!DATABASE_URL) {
 // Main execution
 async function main() {
   const targetDir = process.argv[2] || "./data";
-  
+
   const config: IngestionConfig = {
     targetDir,
     fileExtensions: [".md", ".txt"],
     rateLimitMs: 200,
-    batchSize: 10
+    batchSize: 10,
   };
-  
+
   await ingestFiles(config);
 }
 

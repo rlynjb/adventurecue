@@ -1,6 +1,6 @@
 import { getOpenAIClient, getSQLClient } from "../../clients";
+import { type EmbeddingRow, QueryRequest } from "../../types";
 import { buildContextPrompt } from "../prompts/utils";
-import { type EmbeddingRow, QueryRequest } from "./types";
 
 const openai = getOpenAIClient();
 const sql = getSQLClient();

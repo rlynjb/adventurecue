@@ -1,112 +1,125 @@
-import { generateAnswer } from "../chat";
-import { ChatStatus } from "../chat/types";
+import { openai } from "@ai-sdk/openai";
+import { CoreMessage, streamText } from "ai";
+import { ChatStatus } from "../../types";
 import { generateContext } from "../embedding";
+import {
+  createChatSession,
+  generateSessionId,
+  generateSessionTitle,
+  getRecentMessages,
+  saveChatMessage,
+} from "../memory";
+import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
+import { ChatStatusMessages, ChatStatusTracker } from "../status";
 
 /**
- * Handle streaming responses with Server-Sent Events (SSE)
- *
- * SSE Implementation Overview:
- * 1. Creates a ReadableStream to handle continuous data flow
- * 2. Sets proper SSE headers (text/event-stream, no-cache, keep-alive)
- * 3. Formats data according to SSE protocol (data: prefix, double newline)
- * 4. Streams real-time status updates to the client
+ * Handle streaming responses using AI SDK Core with status tracking
+ * Returns AI SDK UI compatible streaming response
  */
-export async function handleStreamingRequest(data: {
-  query: string;
-  sessionId?: string;
-}): Promise<Response> {
-  // SSE STEP 1: Create a ReadableStream for continuous data transmission
-  // This stream allows us to send data chunks incrementally to the client
-  const stream = new ReadableStream({
-    start(controller) {
-      // SSE STEP 2: Define status update handler
-      // This callback sends formatted SSE events to the client
-      const onStatusUpdate = (status: ChatStatus) => {
-        // SSE Protocol: Format data with "data: " prefix and double newline terminator
-        // Each SSE event must follow this format: "data: <JSON>\n\n"
-        const eventData = `data: ${JSON.stringify({
-          type: "status", // Event type for client-side handling
-          status, // The actual status data
-        })}\n\n`;
+export async function handleStreamingRequest(
+  data: {
+    query: string;
+    sessionId?: string;
+  },
+  onStatusUpdate?: (status: ChatStatus) => void
+): Promise<Response> {
+  const status = new ChatStatusTracker(onStatusUpdate);
+  let currentSessionId = data.sessionId;
 
-        // SSE STEP 3: Enqueue encoded data to the stream
-        // TextEncoder converts string to Uint8Array for network transmission
-        controller.enqueue(new TextEncoder().encode(eventData));
-      };
-
-      // SSE STEP 4: Start processing with streaming callbacks
-      // This function will call onStatusUpdate multiple times during processing
-      processQueryWithStreaming(data, onStatusUpdate, controller);
-    },
-  });
-
-  // SSE STEP 5: Return Response with proper SSE headers
-  return new Response(stream, {
-    headers: {
-      // REQUIRED: Identifies this as an SSE stream
-      "Content-Type": "text/event-stream",
-
-      // IMPORTANT: Prevents browser/proxy caching of streaming data
-      "Cache-Control": "no-cache",
-
-      // IMPORTANT: Keeps connection open for continuous streaming
-      Connection: "keep-alive",
-    },
-  });
-}
-
-/**
- * Example streaming implementation with SSE protocol handling and optional memory
- *
- * This function demonstrates the complete SSE lifecycle:
- * 1. Process data asynchronously
- * 2. Send incremental updates via SSE
- * 3. Send final result
- * 4. Properly close the stream
- */
-async function processQueryWithStreaming(
-  data: { query: string; sessionId?: string },
-  onStatusUpdate: (status: ChatStatus) => void,
-  controller: ReadableStreamDefaultController
-) {
   try {
-    // Simulate getting context (in real implementation, this would be from vector DB)
+    status.executing(1, ChatStatusMessages.ANALYZING_QUERY);
+
+    // Memory functionality - reusing logic from chat.ts
+    if (data.sessionId !== undefined) {
+      if (!currentSessionId) {
+        currentSessionId = generateSessionId();
+        const title = generateSessionTitle(data.query);
+        await createChatSession({
+          session_id: currentSessionId,
+          title,
+        });
+        status.completed(1, "Chat session created");
+      }
+
+      await saveChatMessage({
+        session_id: currentSessionId,
+        role: "user",
+        content: data.query,
+      });
+
+      status.completed(1, "Chat history loaded");
+    }
+
+    status.executing(2, "Generating context from embeddings");
+    // Get context and conversation history - same as chat.ts
     const contextText = await generateContext(data);
+    status.completed(2, "Context generated");
 
-    // SSE EVENT FLOW: This function will trigger multiple onStatusUpdate calls
-    // Each call sends an individual SSE event to the client
-    // Pass sessionId to enable memory functionality if provided
-    const result = await generateAnswer(
-      data.query,
-      contextText,
-      onStatusUpdate, // This callback sends real-time status updates via SSE
-      data.sessionId // Enable memory if sessionId is provided
-    );
+    const conversationHistory = currentSessionId
+      ? (await getRecentMessages(currentSessionId, 8)).map((msg) => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+        }))
+      : [];
 
-    // SSE FINAL EVENT: Send the complete result to the client
-    // Note the "type: final" - this tells the client processing is complete
-    const finalData = `data: ${JSON.stringify({
-      type: "final", // Special event type indicating completion
-      result, // The final processed result
-    })}\n\n`;
+    // Build messages for AI SDK
+    const messages: CoreMessage[] = [
+      {
+        role: "system",
+        content: TRAVEL_ASSISTANT_SYSTEM_PROMPT,
+      },
+      ...conversationHistory,
+      {
+        role: "user",
+        content: data.query,
+      },
+      {
+        role: "assistant",
+        content: contextText,
+      },
+    ];
 
-    // SSE Protocol: Send final event through the stream
-    controller.enqueue(new TextEncoder().encode(finalData));
+    status.executing(3, ChatStatusMessages.WAITING_OPENAI);
+    // Stream with AI SDK Core
+    const result = await streamText({
+      model: openai("gpt-4-turbo"),
+      messages,
+      temperature: 0.7,
+      onFinish: async (result) => {
+        // Save assistant response to memory
+        if (currentSessionId && result.text) {
+          await saveChatMessage({
+            session_id: currentSessionId,
+            role: "assistant",
+            content: result.text,
+          });
+        }
+        status.completed(3, ChatStatusMessages.RESPONSE_COMPLETE);
+      },
+    });
 
-    // SSE CLEANUP: Close the stream to signal completion
-    // This tells the browser that no more events will be sent
-    controller.close();
+    status.completed(3, "Streaming started");
+
+    // Return AI SDK UI compatible stream
+    return result.toTextStreamResponse({
+      headers: {
+        "x-session-id": currentSessionId || "",
+        "x-status-steps": JSON.stringify(status.getSteps()),
+      },
+    });
   } catch (error) {
-    // SSE ERROR HANDLING: Send error event and close stream
-    const errorData = `data: ${JSON.stringify({
-      type: "error", // Error event type for client-side error handling
-      error: error instanceof Error ? error.message : "Unknown error",
-    })}\n\n`;
-
-    // Send error event via SSE
-    controller.enqueue(new TextEncoder().encode(errorData));
-
-    // Always close the stream, even on error
-    controller.close();
+    status.failed(-1, ChatStatusMessages.ERROR_OCCURRED(String(error)), {
+      error,
+    });
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+        steps: status.getSteps(),
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
