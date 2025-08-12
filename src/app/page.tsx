@@ -1,44 +1,154 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { useState } from "react";
+
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}
+
+// Simple markdown renderer component
+const MarkdownRenderer = ({ content }: { content: string }) => {
+  const renderMarkdown = (text: string) => {
+    return (
+      text
+        // Headers (h1-h6)
+        .replace(
+          /^### (.*$)/gim,
+          '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>'
+        )
+        .replace(
+          /^## (.*$)/gim,
+          '<h2 class="text-xl font-bold mt-4 mb-2">$1</h2>'
+        )
+        .replace(
+          /^# (.*$)/gim,
+          '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>'
+        )
+        .replace(
+          /^#### (.*$)/gim,
+          '<h4 class="text-base font-bold mt-3 mb-2">$1</h4>'
+        )
+        .replace(
+          /^##### (.*$)/gim,
+          '<h5 class="text-sm font-bold mt-3 mb-2">$1</h5>'
+        )
+        .replace(
+          /^###### (.*$)/gim,
+          '<h6 class="text-xs font-bold mt-3 mb-2">$1</h6>'
+        )
+        // Bold text
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        // Italic text
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        // Code blocks
+        .replace(
+          /```([\s\S]*?)```/g,
+          '<pre class="bg-gray-700 p-2 rounded text-sm overflow-x-auto my-2"><code>$1</code></pre>'
+        )
+        // Inline code
+        .replace(
+          /`(.*?)`/g,
+          '<code class="bg-gray-700 px-1 rounded text-sm">$1</code>'
+        )
+        // Links
+        .replace(
+          /\[([^\]]+)\]\(([^)]+)\)/g,
+          '<a href="$2" class="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>'
+        )
+        // Line breaks
+        .replace(/\n/g, "<br/>")
+    );
+  };
+
+  return (
+    <div
+      dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+      className="prose prose-invert max-w-none"
+    />
+  );
+};
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [sessionId] = useState<string>("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { messages, sendMessage, status, error } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/.netlify/functions/chat",
-      prepareSendMessagesRequest: ({ messages }) => {
-        const lastMessage = messages[messages.length - 1];
-        const query = lastMessage.parts
-          .filter((part) => part.type === "text")
-          .map((part) => part.text)
-          .join("");
-
-        return {
-          body: {
-            query,
-            sessionId: sessionId || undefined,
-            top_k: 5,
-            streaming: true,
-          },
-        };
-      },
-    }),
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim()) {
-      sendMessage({ text: input });
+    if (input.trim() && !isLoading) {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: "user",
+        content: input.trim(),
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
       setInput("");
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/.netlify/functions/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: userMessage.content,
+            sessionId: sessionId || undefined,
+            streaming: true,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error("No response body");
+        }
+
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "",
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
+
+        const decoder = new TextDecoder();
+        let done = false;
+
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+
+          if (value) {
+            const chunk = decoder.decode(value);
+
+            // Update the last message (assistant) with streaming content
+            setMessages((prev) => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage.role === "assistant") {
+                lastMessage.content += chunk;
+              }
+              return newMessages;
+            });
+          }
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
-
-  const isLoading = status === "submitted" || status === "streaming";
 
   return (
     <div className="flex flex-col h-screen max-w-2xl mx-auto">
@@ -62,21 +172,21 @@ export default function Home() {
             <div className="font-semibold mb-2">
               {message.role === "user" ? "You" : "Assistant"}
             </div>
-            <div>
-              {message.parts.map((part, i) => {
-                if (part.type === "text") {
-                  return <span key={i}>{part.text}</span>;
-                }
-                return null;
-              })}
-            </div>
+            {message.role === "assistant" ? (
+              <MarkdownRenderer content={message.content} />
+            ) : (
+              <div>{message.content}</div>
+            )}
           </div>
         ))}
 
-        {/* Loading indicator */}
+        {/* Loading indicator - Shows streaming in real-time */}
         {isLoading && (
           <div className="p-4 bg-gray-800 text-white mr-8 rounded">
-            <div>Sending...</div>
+            <div className="flex items-center space-x-2">
+              <div className="animate-pulse">●</div>
+              <div>Assistant is typing...</div>
+            </div>
           </div>
         )}
       </div>
@@ -84,7 +194,7 @@ export default function Home() {
       {/* Error handling */}
       {error && (
         <div className="mx-4 mb-2 p-3 bg-red-600 text-white rounded flex-shrink-0">
-          Error: {error.message}
+          Error: {error}
         </div>
       )}
 

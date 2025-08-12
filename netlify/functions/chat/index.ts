@@ -10,19 +10,10 @@ import {
 import { validateRequest } from "./validation";
 
 /**
- * @todo
- * clean up response object.
- * maybe use AI SDK to format the response
- * to match the expected UI format.
- * This would allow us to use the same response structure
- * for both streaming and non-streaming requests.
- *
- * modify handleStreamingRequest to return a AI SDK compatible response
- * so we can use the same response structure for both streaming and non-streaming requests.
- */
-
-/**
  * Enhanced query handler with real-time status updates and memory support
+ *
+ * Streaming: Uses AI SDK Core for streaming responses compatible with AI SDK UI
+ * Non-streaming: Uses existing generateAnswer with status tracking
  */
 const handler = async (req: Request) => {
   if (req.method !== "POST") {
@@ -44,11 +35,15 @@ const handler = async (req: Request) => {
 
   try {
     if (body.streaming) {
-      /**
-       * @todo see what data structure is expected here
-       * and how to format the response to match the expected UI format.
-       */
-      return handleStreamingRequest(validation.data!);
+      // Create status update handler for streaming
+      const onStatusUpdate = (status: ChatStatus) => {
+        console.log(
+          `[STREAM ${status.step}] ${status.description} - ${status.status}`
+        );
+      };
+
+      // handleStreamingRequest now uses AI SDK Core and returns AI SDK UI compatible response
+      return handleStreamingRequest(validation.data!, onStatusUpdate);
     }
 
     const result: NonStreamingResponse = await processQueryWithStatus(
