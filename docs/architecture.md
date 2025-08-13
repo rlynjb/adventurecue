@@ -28,23 +28,18 @@ adventurecue/
 │   │   │   ├── page.tsx         # Main page component
 │   │   │   ├── globals.css      # Global styles
 │   │   │   └── favicon.ico      # App favicon
-│   │   ├── components/          # React components
-│   │   │   ├── ingest.tsx       # Ingestion UI component
-│   │   │   └── query.tsx        # Query UI component
-│   │   └── lib/                 # Frontend utilities
-│   │       └── packages/        # Reusable packages
-│   │           └── sse-streaming-client/  # SSE client library
-│   │               ├── sse-streaming-client.ts    # Core streaming client
-│   │               ├── usage-examples.tsx         # Usage examples
-│   │               ├── index.ts                   # Package exports
-│   │               └── README.md                  # Client documentation
+│   │   └── components/          # React components
+│   │       └── ingest.tsx       # Ingestion UI component
 │   └── public/                  # Static assets
 │
 ├── 🌐 API LAYER (Backend Endpoints)
 │   └── netlify/functions/
-│       ├── ingest.ts            # Text ingestion endpoint
-│       ├── query.ts             # Semantic search endpoint
-│       └── chat.ts              # Chat with memory endpoint
+│       ├── chat/                # Chat endpoint with validation
+│       │   ├── index.ts         # Chat with memory endpoint
+│       │   └── validation.ts    # Chat request validation
+│       └── ingest/              # Ingestion endpoint with validation
+│           ├── index.ts         # Text ingestion endpoint
+│           └── validation.ts    # Ingestion request validation
 │
 ├── ⚙️ CORE LAYER (Business Logic) - Agentic RAG Pipeline
 │   └── netlify/services/
@@ -57,6 +52,8 @@ adventurecue/
 │       │   ├── embedding.ts     # → Vector encoding & similarity search (Retrieval Agent)
 │       │   ├── types.ts
 │       │   └── index.ts
+│       ├── generation/          # ⚡ AI GENERATION UTILITIES
+│       │   └── index.ts         # → Reusable AI generation functions
 │       ├── ingestion/           # 📥 KNOWLEDGE INGESTION
 │       │   ├── ingestion.ts     # → Document processing & knowledge base building
 │       │   ├── types.ts
@@ -69,10 +66,6 @@ adventurecue/
 │       │   ├── prompts.ts       # → System & user prompt templates
 │       │   ├── types.ts
 │       │   ├── utils.ts         # → Prompt utilities
-│       │   └── index.ts
-│       ├── query/               # 🎯 QUERY ORCHESTRATION
-│       │   ├── query.ts         # → RAG pipeline orchestrator (Query Agent)
-│       │   ├── types.ts
 │       │   └── index.ts
 │       ├── status/              # 📊 STATUS TRACKING
 │       │   ├── status-tracking.ts    # → Real-time operation monitoring
@@ -92,6 +85,7 @@ adventurecue/
 │   │   ├── database.ts          # → Database connection utilities
 │   │   ├── openai.ts            # → OpenAI API client
 │   │   └── index.ts
+│   ├── netlify/types/           # Shared type definitions
 │   └── netlify/utils/           # Shared utility functions
 │       ├── file-system.ts       # → File system operations
 │       ├── rate-limiting.ts     # → Rate limiting utilities
@@ -118,11 +112,33 @@ adventurecue/
 │   └── examples/                # Example code & usage
 ```
 
+│ ├── db/
+│ │ ├── index.ts # Database connection & setup
+│ │ └── schema.ts # Schema definitions (embeddings + chat)
+│ ├── migrations/ # Database migrations
+│ │ ├── 0000_enable-pgvector.sql
+│ │ ├── 0001_create-tables.sql
+│ │ ├── 0002_create-ivfflat-index.sql
+│ │ ├── 0003_ancient_blue_blade.sql # Chat memory tables
+│ │ └── meta/ # Migration metadata
+│ └── data/ # Source data files
+│
+├── 🛠️ TOOLING LAYER (Development & Operations)
+│ ├── bin/
+│ │ ├── ingest.ts # CLI ingestion script
+│ │ └── verify-chat-tables.ts # Database verification utility
+│ ├── docs/ # Documentation
+│ └── examples/ # Example code & usage
+
+```
+
 ## Key Terminology
 
 ### Agentic RAG Pipeline Terms
 
 - **Chat Agent**: Core conversation orchestrator that manages the complete chat pipeline including memory, tools, and response generation (implemented in `chat/chat.ts`).
+
+- **Generation Service**: Reusable AI generation utilities providing common functions for message building and model interaction (implemented in `generation/index.ts`).
 
 - **Tool Execution**: Dynamic invocation of external functions and services based on query analysis, with standardized tool calling interface (implemented in `tools/tools.ts`).
 
@@ -212,3 +228,4 @@ adventurecue/
 - **Validation**: Request/response data integrity
 - **Error Boundaries**: Comprehensive error handling
 - **Monitoring**: Built-in status and health checks
+```
