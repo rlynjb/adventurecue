@@ -35,8 +35,8 @@ const handler = async (req: Request) => {
 
   try {
     if (body.streaming) {
-      // handleStreamingRequest now uses AI SDK Core and returns AI SDK UI compatible response
       return handleStreamingRequest(validation.data!);
+      // ================ NEW CHAT STREAMING HANDLER ENDS HERE ================
     }
 
     const result: NonStreamingResponse = await processQueryWithStatus(

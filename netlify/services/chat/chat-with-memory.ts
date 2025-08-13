@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ChatInput, ChatStatus, NonStreamingResponse } from "../../types";
+import { callOpenAI } from "../generation";
 import {
   createChatSession,
   generateSessionId,
@@ -11,7 +12,6 @@ import {
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
 import { ChatStatusMessages, ChatStatusTracker } from "../status";
 import { executeToolCall, openAITools } from "../tools";
-import { callOpenAI } from "./helpers";
 
 /**
  * Memory-enabled chat function that saves conversation history
@@ -82,8 +82,8 @@ export const generateAnswerWithMemory = async (
 
       const toolResult = await executeToolCall(
         toolCall,
-        { query: input.userQuery, contextText: input.similarEmbeddingContext },
-        status
+        { query: input.userQuery, contextText: input.similarEmbeddingContext }
+        //status
       );
 
       status.executing(4, ChatStatusMessages.SENDING_TOOL_RESULTS);

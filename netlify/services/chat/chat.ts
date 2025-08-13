@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { ChatStatus, NonStreamingResponse } from "../../types";
+import { callOpenAI } from "../generation";
 import {
   createChatSession,
   generateSessionId,
@@ -9,9 +10,8 @@ import {
   saveChatMessage,
 } from "../memory";
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
-import { ChatStatusMessages, ChatStatusTracker } from "../status";
+//import { ChatStatusMessages, ChatStatusTracker } from "../status";
 import { executeToolCall, openAITools } from "../tools";
-import { callOpenAI } from "./helpers";
 
 /**
  * Generates an answer to the user's query using OpenAI's model and tracks the status of each step.
@@ -35,12 +35,12 @@ export const generateAnswer = async (
   sessionId?: string // Optional: enables memory functionality
 ): Promise<NonStreamingResponse> => {
   const startTime = Date.now();
-  const status = new ChatStatusTracker(onStatusUpdate);
+  //const status = new ChatStatusTracker(onStatusUpdate);
   const tools: string[] = [];
   let currentSessionId = sessionId;
 
   try {
-    status.executing(1, ChatStatusMessages.ANALYZING_QUERY);
+    //status.executing(1, ChatStatusMessages.ANALYZING_QUERY);
 
     /**
      * @todo this can be extracted and moved to helpers.ts
@@ -57,7 +57,7 @@ export const generateAnswer = async (
           title,
         });
 
-        status.completed(1, "Chat session created");
+        //status.completed(1, "Chat session created");
       }
 
       // Save user message to session
@@ -67,7 +67,7 @@ export const generateAnswer = async (
         content: userQuery,
       });
 
-      status.completed(1, "Chat history loaded");
+      //status.completed(1, "Chat history loaded");
     }
 
     // Build input with optional conversation history
@@ -80,19 +80,19 @@ export const generateAnswer = async (
 
     // up to here
 
+    //status.completed(1, ChatStatusMessages.QUERY_PREPARED);
+    //status.executing(2, ChatStatusMessages.WAITING_OPENAI);
+
+    // 3. GENERATION PHASE
     const input: any[] = [
       { role: "system", content: TRAVEL_ASSISTANT_SYSTEM_PROMPT },
       ...conversationHistory,
       { role: "user", content: userQuery },
       { role: "assistant", content: similarEmbeddingContext },
     ];
-
-    status.completed(1, ChatStatusMessages.QUERY_PREPARED);
-    status.executing(2, ChatStatusMessages.WAITING_OPENAI);
-
     const response = await callOpenAI(input, openAITools);
 
-    status.completed(2, ChatStatusMessages.RECEIVED_RESPONSE);
+    //status.completed(2, ChatStatusMessages.RECEIVED_RESPONSE);
 
     const toolCall = response.output?.[0];
     if (toolCall?.type) {
@@ -103,17 +103,17 @@ export const generateAnswer = async (
 
       const toolResult = await executeToolCall(
         toolCall,
-        { query: userQuery, contextText: similarEmbeddingContext },
-        status
+        { query: userQuery, contextText: similarEmbeddingContext }
+        //status
       );
 
-      status.executing(4, ChatStatusMessages.SENDING_TOOL_RESULTS);
+      //status.executing(4, ChatStatusMessages.SENDING_TOOL_RESULTS);
       input.push(toolResult);
       // tools - up to here
 
       const followUpResponse = await callOpenAI(input, openAITools, true);
-      status.completed(4, ChatStatusMessages.RECEIVED_FINAL);
-      status.completed(5, ChatStatusMessages.RESPONSE_COMPLETE);
+      //status.completed(4, ChatStatusMessages.RECEIVED_FINAL);
+      //status.completed(5, ChatStatusMessages.RESPONSE_COMPLETE);
 
       const finalResponse = followUpResponse.output_text ?? "";
 
@@ -133,14 +133,14 @@ export const generateAnswer = async (
       return {
         success: true,
         response: finalResponse,
-        steps: status.getSteps(),
+        steps: [], //status.getSteps(),
         toolsUsed: tools,
         executionTimeMs: Date.now() - startTime,
         sessionId: currentSessionId,
       };
     }
 
-    status.completed(2, ChatStatusMessages.RESPONSE_COMPLETE_NO_TOOLS);
+    //status.completed(2, ChatStatusMessages.RESPONSE_COMPLETE_NO_TOOLS);
 
     const finalResponse = response.output_text ?? "";
 
@@ -156,20 +156,20 @@ export const generateAnswer = async (
     return {
       success: true,
       response: finalResponse,
-      steps: status.getSteps(),
+      steps: [], //status.getSteps(),
       toolsUsed: tools,
       executionTimeMs: Date.now() - startTime,
       sessionId: currentSessionId,
     };
-  } catch (error) {
-    status.failed(-1, ChatStatusMessages.ERROR_OCCURRED(String(error)), {
+  } catch {
+    /*status.failed(-1, ChatStatusMessages.ERROR_OCCURRED(String(error)), {
       error,
-    });
+    });*/
     return {
       success: false,
       response:
         "I apologize, but I encountered an error while processing your request.",
-      steps: status.getSteps(),
+      steps: [], //status.getSteps(),
       toolsUsed: tools,
       executionTimeMs: Date.now() - startTime,
       sessionId: currentSessionId,
