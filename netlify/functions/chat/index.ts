@@ -35,15 +35,8 @@ const handler = async (req: Request) => {
 
   try {
     if (body.streaming) {
-      // Create status update handler for streaming
-      const onStatusUpdate = (status: ChatStatus) => {
-        console.log(
-          `[STREAM ${status.step}] ${status.description} - ${status.status}`
-        );
-      };
-
       // handleStreamingRequest now uses AI SDK Core and returns AI SDK UI compatible response
-      return handleStreamingRequest(validation.data!, onStatusUpdate);
+      return handleStreamingRequest(validation.data!);
     }
 
     const result: NonStreamingResponse = await processQueryWithStatus(
