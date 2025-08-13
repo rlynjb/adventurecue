@@ -2,70 +2,18 @@
 
 [Build RAG Application with Neon, Netlify, and OpenAI Guide](https://developers.netlify.com/guides/build-rag-application-with-neon-netlify-openai/)
 
+[Building the Entire RAG Ecosystem and Optimizing Every Component](https://levelup.gitconnected.com/building-the-entire-rag-ecosystem-and-optimizing-every-component-8f23349b96a4#7fbd)
+
 ## Table of Contents
 
 - [Overview](#overview)
-- [Agentic RAG Pipeline Components](#agentic-rag-pipeline-components)
 - [Directory Structure](#directory-structure)
 - [Key Terminology](#key-terminology)
-- [Architecture Benefits](#architecture-benefits)
-- [Data Ingestion Architecture](#data-ingestion-architecture)
 - [Technology Stack](#technology-stack)
 
 ## Overview
 
 This document outlines the Retrieval-Augmented Generation (RAG) architecture implemented in the AdventureCue project. The system uses a composable, modular approach to handle vector embeddings, similarity search, and AI-generated responses.
-
-## Agentic RAG Pipeline Components
-
-```mermaid
-graph TB
-    A[Planning & Reasoning] --> B[Retrieval]
-    A --> C[Tool Execution]
-    B --> D[Augmentation & Memory]
-    C --> D
-    D --> E[Generation & Response]
-    E --> F[Learning & Adaptation]
-    F --> A
-
-    style A fill:#1565c0
-    style B fill:#f57f17
-    style C fill:#2e7d32
-    style D fill:#c2185b
-    style E fill:#7b1fa2
-    style F fill:#00695c
-```
-
-### 1. Planning & Reasoning Phase
-
-Agent analyzes user requests to determine optimal approach and required tools. Breaks down complex queries, selects appropriate tools, and plans multi-step workflows.
-
-### 2. Retrieval Phase
-
-Enhanced semantic search using PostgreSQL + pgvector with contextual retrieval considering conversation history and relevance filtering.
-
-### 3. Tool Execution Phase
-
-Dynamic invocation of external APIs, computational tools, database queries, and custom business logic based on query requirements.
-
-### 4. Augmentation & Memory Phase
-
-Intelligent context building combining retrieved documents, conversation history, tool results, and system instructions with real-time status tracking.
-
-### 5. Generation & Response Phase
-
-AI-powered response generation using OpenAI's chat completion with context-aware prompting, tool-augmented responses, conversational memory persistence, and real-time streaming capabilities via Server-Sent Events (SSE).
-
-#### Real-time Streaming Features
-
-- **Server-Sent Events**: Live status updates during processing
-- **Progressive Response**: Incremental result delivery
-- **Connection Management**: Robust stream lifecycle handling
-- **Error Recovery**: Graceful failure handling with automatic reconnection
-
-### 6. Learning & Adaptation Phase
-
-Continuous improvement through session management, feedback incorporation, pattern recognition, and memory optimization for personalized experiences.
 
 ## Directory Structure
 
@@ -201,27 +149,6 @@ adventurecue/
 - **Multi-Modal Ingestion**: Support for processing different content types through both CLI bulk processing and UI-based real-time ingestion.
 
 - **Session Memory Persistence**: Database storage of conversation history enabling context retrieval across multiple interactions within the same session.
-
-## Architecture Benefits
-
-- **Composability**: Modular services with single responsibilities
-- **Scalability**: Independent service scaling and resource management
-- **Maintainability**: Clear separation of concerns with TypeScript safety
-- **Extensibility**: Easy integration of new RAG components and agentic tools
-
-## Data Ingestion Architecture
-
-### CLI-Based Ingestion
-
-Bulk file processing with rate limiting and error resilience for building the knowledge base.
-
-### UI-Based Ingestion
-
-Real-time text ingestion through web interface for dynamic content addition.
-
-### Processing Pipeline
-
-Environment validation → File processing → Text chunking → Vector embedding → Database storage
 
 ## Technology Stack
 

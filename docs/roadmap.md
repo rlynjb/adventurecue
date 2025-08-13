@@ -72,8 +72,6 @@ This roadmap serves as your source of truth checklist for developing AdventureCu
 
 ### 🤖 Phase 2: Agentic Enhancement ✅ (July 22, 2025)
 
-**📄 Primary Documentation**: [`agentic-vs-traditional-rag.md`](./agentic-vs-traditional-rag.md)
-
 #### What Was Enhanced - Checklist ✅
 
 - [x] Traditional RAG → Agentic RAG transformation
@@ -118,8 +116,6 @@ This roadmap serves as your source of truth checklist for developing AdventureCu
 - [x] Data flow visualization and component interaction maps
 
 #### 3B. Chat System Visualization ✅
-
-**📄 Documentation**: [`services/chat.md`](./services/chat.md)
 
 - [x] Enhanced chat system flow diagrams
 - [x] Tool execution decision trees
@@ -780,7 +776,7 @@ Transform AdventureCue into a comprehensive RAG Software as a Service platform, 
 ### Completed Phases Summary
 
 - ✅ **Phase 1** (July 10, 2025): Foundation & RAG Core - [`architecture.md`](./architecture.md)
-- ✅ **Phase 2** (July 22, 2025): Agentic Enhancement - [`agentic-vs-traditional-rag.md`](./agentic-vs-traditional-rag.md)
+- ✅ **Phase 2** (July 22, 2025): Agentic Enhancement
 - ✅ **Phase 3** (July 27, 2025): System Refactoring - [`architecture.md`](./architecture.md)
 
 ### Current Focus

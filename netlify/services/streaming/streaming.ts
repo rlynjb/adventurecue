@@ -46,10 +46,10 @@ export async function handleStreamingRequest(data: {
         }))
       : [];
 
-    // 3. GENERATION PHASE
     // Get context and conversation history - same as chat.ts
     const contextText = await generateContext(data);
 
+    // 3. GENERATION PHASE
     // Build messages for AI SDK
     const messages: CoreMessage[] = [
       { role: "system", content: TRAVEL_ASSISTANT_SYSTEM_PROMPT },
