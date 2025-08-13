@@ -39,9 +39,6 @@ export async function handleStreamingRequest(data: {
       });
     }
 
-    // Get context and conversation history - same as chat.ts
-    const contextText = await generateContext(data);
-
     const conversationHistory = currentSessionId
       ? (await getRecentMessages(currentSessionId, 8)).map((msg) => ({
           role: msg.role as "user" | "assistant",
@@ -49,21 +46,16 @@ export async function handleStreamingRequest(data: {
         }))
       : [];
 
+    // 3. GENERATION PHASE
+    // Get context and conversation history - same as chat.ts
+    const contextText = await generateContext(data);
+
     // Build messages for AI SDK
     const messages: CoreMessage[] = [
-      {
-        role: "system",
-        content: TRAVEL_ASSISTANT_SYSTEM_PROMPT,
-      },
+      { role: "system", content: TRAVEL_ASSISTANT_SYSTEM_PROMPT },
       ...conversationHistory,
-      {
-        role: "user",
-        content: data.query,
-      },
-      {
-        role: "assistant",
-        content: contextText,
-      },
+      { role: "user", content: data.query },
+      { role: "assistant", content: contextText },
     ];
 
     // Stream with AI SDK Core
