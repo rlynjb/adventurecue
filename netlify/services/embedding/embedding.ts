@@ -70,6 +70,7 @@ export const generateContext = async (
    * ======
    *
    * 1. INDEXING PHASE
+   * Functionality is in services/ingestion.ts
    * Organize and store data in a structured format to enable efficient searching.
    * services/ingestion file consists of:
    * - Reading files from data directory
@@ -82,6 +83,7 @@ export const generateContext = async (
    * ======
    *
    * 2. RETRIEVAL PHASE
+   * functionality is in services/embedding.ts
    * Search and fetch relevant data based on a query or input.
    * It takes a user’s query, embeds it, and then fetches the most
    * semantically similar chunks from the vector store.
@@ -89,6 +91,7 @@ export const generateContext = async (
    * =======
    *
    * 3. GENERATION PHASE
+   * functionality is in services/generation
    * Create a final response or output using the retrieved data.
    * We have our context, but we need an LLM to read it and formulate
    * a human-friendly answer.
