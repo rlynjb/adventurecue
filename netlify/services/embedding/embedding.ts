@@ -91,7 +91,7 @@ export const generateContext = async (
    * =======
    *
    * 3. GENERATION PHASE
-   * functionality is in services/generation
+   * functionality is in services/generation and services/streaming
    * Create a final response or output using the retrieved data.
    * We have our context, but we need an LLM to read it and formulate
    * a human-friendly answer.
