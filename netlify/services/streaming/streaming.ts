@@ -50,6 +50,16 @@ async function handleChatMemory(data: {
     content: msg.content,
   }));
 
+  /*
+  console.log("Session ID:", currentSessionId);
+  console.log(
+    "Conversation History:",
+    conversationHistory.length,
+    "messages"
+  );
+  console.log("History preview:", conversationHistory.slice(-2)); // Last 2 messages
+  */
+
   return { sessionId: currentSessionId, conversationHistory };
 }
 
@@ -62,19 +72,9 @@ export async function handleStreamingRequest(data: {
   sessionId?: string;
 }): Promise<Response> {
   try {
-    // Handle memory and get conversation history
     const { sessionId: currentSessionId, conversationHistory } =
       await handleChatMemory(data);
 
-    console.log("Session ID:", currentSessionId);
-    console.log(
-      "Conversation History:",
-      conversationHistory.length,
-      "messages"
-    );
-    console.log("History preview:", conversationHistory.slice(-2)); // Last 2 messages
-
-    // Get context and conversation history - same as chat.ts
     const contextText = await generateContext(data);
 
     // 3. GENERATION PHASE
