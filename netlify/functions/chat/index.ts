@@ -1,9 +1,9 @@
-import { generateAnswer } from "../../services/chat";
-import { generateContext } from "../../services/embedding";
+//import { generateAnswer } from "../../services/chat";
+//import { generateContext } from "../../services/embedding";
 import { handleStreamingRequest } from "../../services/streaming";
 import {
-  ChatStatus,
-  NonStreamingResponse,
+  //ChatStatus,
+  //NonStreamingResponse,
   RequestBody,
   ValidateRequest,
 } from "../../types";
@@ -38,6 +38,7 @@ const handler = async (req: Request) => {
       return handleStreamingRequest(validation.data!);
     }
 
+    /*
     const result: NonStreamingResponse = await processQueryWithStatus(
       validation.data!
     );
@@ -45,12 +46,13 @@ const handler = async (req: Request) => {
     return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" },
     });
+    */
   } catch (err: unknown) {
     console.error(err);
     return new Response("Internal Server Error", { status: 500 });
   }
 };
-
+/*
 async function processQueryWithStatus(data: {
   query: string;
   sessionId?: string;
@@ -76,5 +78,5 @@ async function processQueryWithStatus(data: {
     steps: [...statusUpdates, ...result.steps],
   };
 }
-
+*/
 export default handler;
