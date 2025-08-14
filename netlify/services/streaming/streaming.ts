@@ -11,6 +11,49 @@ import {
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
 
 /**
+ * Handle memory functionality and return conversation history
+ * @todo
+ * add limit to what amount can be saved in memory/db
+ * delete in certain date. ex, within 7 days, session and its history will be deleted
+ */
+async function handleChatMemory(data: {
+  query: string;
+  sessionId?: string;
+}): Promise<{
+  sessionId: string;
+  conversationHistory: { role: "user" | "assistant"; content: string }[];
+}> {
+  let currentSessionId = data.sessionId;
+
+  // Create session if none provided
+  if (!currentSessionId) {
+    currentSessionId = generateSessionId();
+    const title = generateSessionTitle(data.query);
+    await createChatSession({
+      session_id: currentSessionId,
+      title,
+    });
+  }
+
+  // Save user message
+  await saveChatMessage({
+    session_id: currentSessionId,
+    role: "user",
+    content: data.query,
+  });
+
+  // Get conversation history
+  const conversationHistory = (
+    await getRecentMessages(currentSessionId, 8)
+  ).map((msg) => ({
+    role: msg.role as "user" | "assistant",
+    content: msg.content,
+  }));
+
+  return { sessionId: currentSessionId, conversationHistory };
+}
+
+/**
  * Handle streaming responses using AI SDK Core with memory support
  * Returns AI SDK UI compatible streaming response
  */
@@ -18,35 +61,10 @@ export async function handleStreamingRequest(data: {
   query: string;
   sessionId?: string;
 }): Promise<Response> {
-  let currentSessionId = data.sessionId;
-
   try {
-    // Memory functionality - create session if none provided or continue existing
-    if (!currentSessionId) {
-      // Create new session
-      currentSessionId = generateSessionId();
-      const title = generateSessionTitle(data.query);
-      await createChatSession({
-        session_id: currentSessionId,
-        title,
-      });
-    }
-
-    // Always save user message if we have a session
-    if (currentSessionId) {
-      await saveChatMessage({
-        session_id: currentSessionId,
-        role: "user",
-        content: data.query,
-      });
-    }
-
-    const conversationHistory = currentSessionId
-      ? (await getRecentMessages(currentSessionId, 8)).map((msg) => ({
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-        }))
-      : [];
+    // Handle memory and get conversation history
+    const { sessionId: currentSessionId, conversationHistory } =
+      await handleChatMemory(data);
 
     console.log("Session ID:", currentSessionId);
     console.log(
