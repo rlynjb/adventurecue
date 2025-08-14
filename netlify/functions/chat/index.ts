@@ -36,7 +36,6 @@ const handler = async (req: Request) => {
   try {
     if (body.streaming) {
       return handleStreamingRequest(validation.data!);
-      // ================ NEW CHAT STREAMING HANDLER ENDS HERE ================
     }
 
     const result: NonStreamingResponse = await processQueryWithStatus(

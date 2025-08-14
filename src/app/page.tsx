@@ -72,7 +72,7 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
 
 export default function Home() {
   const [input, setInput] = useState("");
-  const [sessionId] = useState<string>("");
+  const [sessionId, setSessionId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +107,14 @@ export default function Home() {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        // Capture session ID from response headers
+        const responseSessionId = response.headers.get("x-session-id");
+        if (responseSessionId && !sessionId) {
+          setSessionId(responseSessionId);
+          console.log("New session created:", responseSessionId);
+        }
+        console.log("Current session ID:", sessionId || responseSessionId);
 
         const reader = response.body?.getReader();
         if (!reader) {
@@ -156,6 +164,11 @@ export default function Home() {
         <h2 className="text-2xl font-semibold text-slate-500">
           advntrQ Chatbot
         </h2>
+        {sessionId && (
+          <div className="text-xs text-gray-500 mt-1">
+            Session: {sessionId.slice(0, 8)}...
+          </div>
+        )}
       </header>
 
       {/* Messages */}

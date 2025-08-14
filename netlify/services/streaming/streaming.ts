@@ -21,17 +21,19 @@ export async function handleStreamingRequest(data: {
   let currentSessionId = data.sessionId;
 
   try {
-    // Memory functionality - reusing logic from chat.ts
-    if (data.sessionId !== undefined) {
-      if (!currentSessionId) {
-        currentSessionId = generateSessionId();
-        const title = generateSessionTitle(data.query);
-        await createChatSession({
-          session_id: currentSessionId,
-          title,
-        });
-      }
+    // Memory functionality - create session if none provided or continue existing
+    if (!currentSessionId) {
+      // Create new session
+      currentSessionId = generateSessionId();
+      const title = generateSessionTitle(data.query);
+      await createChatSession({
+        session_id: currentSessionId,
+        title,
+      });
+    }
 
+    // Always save user message if we have a session
+    if (currentSessionId) {
       await saveChatMessage({
         session_id: currentSessionId,
         role: "user",
@@ -45,6 +47,14 @@ export async function handleStreamingRequest(data: {
           content: msg.content,
         }))
       : [];
+
+    console.log("Session ID:", currentSessionId);
+    console.log(
+      "Conversation History:",
+      conversationHistory.length,
+      "messages"
+    );
+    console.log("History preview:", conversationHistory.slice(-2)); // Last 2 messages
 
     // Get context and conversation history - same as chat.ts
     const contextText = await generateContext(data);
