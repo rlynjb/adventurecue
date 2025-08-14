@@ -1,67 +1,38 @@
 import { openai } from "@ai-sdk/openai";
 import { CoreMessage, streamText } from "ai";
 import { generateContext } from "../embedding";
-import {
-  createChatSession,
-  generateSessionId,
-  generateSessionTitle,
-  getRecentMessages,
-  saveChatMessage,
-} from "../memory";
+import { saveChatMessage } from "../memory";
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
+import { handleChatMemory } from "./utils";
 
 /**
- * Handle memory functionality and return conversation history
- * @todo
- * add limit to what amount can be saved in memory/db
- * delete in certain date. ex, within 7 days, session and its history will be deleted
+ * Simple tool definitions for AI SDK
  */
-async function handleChatMemory(data: {
-  query: string;
-  sessionId?: string;
-}): Promise<{
-  sessionId: string;
-  conversationHistory: { role: "user" | "assistant"; content: string }[];
-}> {
-  let currentSessionId = data.sessionId;
-
-  // Create session if none provided
-  if (!currentSessionId) {
-    currentSessionId = generateSessionId();
-    const title = generateSessionTitle(data.query);
-    await createChatSession({
-      session_id: currentSessionId,
-      title,
-    });
-  }
-
-  // Save user message
-  await saveChatMessage({
-    session_id: currentSessionId,
-    role: "user",
-    content: data.query,
-  });
-
-  // Get conversation history
-  const conversationHistory = (
-    await getRecentMessages(currentSessionId, 8)
-  ).map((msg) => ({
-    role: msg.role as "user" | "assistant",
-    content: msg.content,
-  }));
-
-  /*
-  console.log("Session ID:", currentSessionId);
-  console.log(
-    "Conversation History:",
-    conversationHistory.length,
-    "messages"
-  );
-  console.log("History preview:", conversationHistory.slice(-2)); // Last 2 messages
-  */
-
-  return { sessionId: currentSessionId, conversationHistory };
-}
+/*
+const tools = {
+  web_search: {
+    description: "Search the web for current information",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        query: {
+          type: "string" as const,
+          description: "The search query to execute",
+        },
+      },
+      required: ["query"],
+    },
+    execute: async ({ query }: { query: string }) => {
+      // Simple mock implementation - replace with actual web search
+      return {
+        query,
+        results: `Mock search results for: ${query}`,
+        timestamp: new Date().toISOString(),
+      };
+    },
+  },
+};
+*/
 
 /**
  * Handle streaming responses using AI SDK Core with memory support
@@ -91,7 +62,17 @@ export async function handleStreamingRequest(data: {
       model: openai("gpt-4-turbo"),
       messages,
       temperature: 0.7,
+      //tools: tools,
       onFinish: async (result) => {
+        // Handle tool calls if present
+        /*
+        if (result.toolCalls && result.toolCalls.length > 0) {
+          console.log("Tool calls detected:", result.toolCalls);
+          // Tool results would be handled in a follow-up call
+          // For now, just log them
+        }
+        */
+
         // Save assistant response to memory
         if (currentSessionId && result.text) {
           await saveChatMessage({
