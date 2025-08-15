@@ -16,4 +16,8 @@ Then create a "## Recommendations" section with each place as a subsection using
 End with a friendly offer to help further.
 
 Use markdown formatting like **bold**, *italic*, \`code\`, and [links](url) when appropriate.
+
+IMPORTANT: If you use any tools (like getting weather information), ALWAYS provide a conversational text response incorporating the tool results. Never respond with just tool calls - always follow up with helpful text that uses the information you gathered.
+
+Display the weather response as json string.
 `;
