@@ -87,3 +87,52 @@ export function getWeatherDescription(code: number): string {
 
   return weatherCodes[code] || "Unknown conditions";
 }
+
+// Centralized weather data fetching function
+export async function fetchWeatherData(location: string) {
+  console.log("🌤️ Fetching weather data for location:", location);
+
+  try {
+    // Use Open-Meteo API for real weather data
+    const geocodingResponse = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+        location
+      )}&count=1`
+    );
+    const geocodingData = await geocodingResponse.json();
+
+    if (!geocodingData.results || geocodingData.results.length === 0) {
+      return {
+        location,
+        error: "Location not found",
+      };
+    }
+
+    const { latitude, longitude, name, country } = geocodingData.results[0];
+
+    // Get current weather
+    const weatherResponse = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`
+    );
+    const weatherData = await weatherResponse.json();
+
+    const result = {
+      location: `${name}, ${country}`,
+      temperature: Math.round(weatherData.current.temperature_2m),
+      humidity: weatherData.current.relative_humidity_2m,
+      windSpeed: weatherData.current.wind_speed_10m,
+      conditions: getWeatherDescription(weatherData.current.weather_code),
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log("✅ Weather data retrieved:", result);
+    return result;
+  } catch (error) {
+    console.error("❌ Weather API error:", error);
+    return {
+      location,
+      error: "Failed to fetch weather data",
+      fallbackTemp: 72 + Math.floor(Math.random() * 21) - 10,
+    };
+  }
+}
