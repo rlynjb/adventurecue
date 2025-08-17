@@ -56,16 +56,16 @@ ${contextText}`;
       data.query.toLowerCase().includes("climate");
 
     // Stream with AI SDK Core
-    console.log("🚀 Starting streamText with query:", data.query);
+    /*console.log("🚀 Starting streamText with query:", data.query);
     console.log("🔧 Is weather query:", isWeatherQuery);
     console.log(
       "🛠️ Tools available:",
       isWeatherQuery ? Object.keys(tools) : "none"
-    );
+    );*/
 
     // For weather queries, we need special handling to ensure text responses
     if (isWeatherQuery) {
-      console.log("🌤️ Weather query detected - using manual weather handling");
+      //console.log("🌤️ Weather query detected - using manual weather handling");
 
       // Execute weather tool first to get the data
       const weatherLocation = data.query.toLowerCase().includes("seattle")
@@ -73,10 +73,10 @@ ${contextText}`;
         : "current location";
 
       try {
-        console.log(
+        /*console.log(
           "🌤️ Using centralized weather function for:",
           weatherLocation
-        );
+        );*/
         const weatherResult = await fetchWeatherData(weatherLocation);
 
         // Create a new prompt that includes the weather data and asks for a formatted response
@@ -103,11 +103,11 @@ Please provide a helpful travel assistant response following the TRAVEL_ASSISTAN
           temperature: 0.7,
           tools: undefined, // No tools needed since we already have the data
           onFinish: async (result) => {
-            console.log("🏁 Weather stream finished");
+            /*console.log("🏁 Weather stream finished");
             console.log("📊 Result summary:", {
               textLength: result.text?.length || 0,
               finishReason: result.finishReason,
-            });
+            });*/
 
             // Save response to memory
             if (currentSessionId && result.text) {
@@ -116,12 +116,12 @@ Please provide a helpful travel assistant response following the TRAVEL_ASSISTAN
                 role: "assistant",
                 content: result.text,
               });
-              console.log("💾 Saved weather response to memory");
+              //console.log("💾 Saved weather response to memory");
             }
           },
         });
 
-        console.log("🔄 Creating weather stream response...");
+        //console.log("🔄 Creating weather stream response...");
         const streamResponse = result.toTextStreamResponse({
           headers: {
             "x-session-id": currentSessionId || "",
@@ -131,7 +131,7 @@ Please provide a helpful travel assistant response following the TRAVEL_ASSISTAN
           },
         });
 
-        console.log("✅ Weather stream response created successfully");
+        //console.log("✅ Weather stream response created successfully");
         return streamResponse;
       } catch (error) {
         console.error("❌ Error in manual weather handling:", error);
@@ -146,15 +146,15 @@ Please provide a helpful travel assistant response following the TRAVEL_ASSISTAN
       temperature: 0.7,
       tools: undefined, // No tools for non-weather queries
       onFinish: async (result) => {
-        console.log("🏁 Stream finished", result);
+        /*console.log("🏁 Stream finished", result);
         console.log("📊 Result summary:", {
           textLength: result.text?.length || 0,
           toolCallsCount: result.toolCalls?.length || 0,
           finishReason: result.finishReason,
-        });
+        });*/
 
         // Handle tool calls if present
-        if (result.toolCalls && result.toolCalls.length > 0) {
+        /*if (result.toolCalls && result.toolCalls.length > 0) {
           console.log(
             "✅ Tool calls detected:",
             result.toolCalls.length,
@@ -166,7 +166,7 @@ Please provide a helpful travel assistant response following the TRAVEL_ASSISTAN
           );
         } else {
           console.log("ℹ️ No tool calls made for this request");
-        }
+        }*/
 
         // Save assistant response to memory
         if (currentSessionId && result.text) {
@@ -175,14 +175,14 @@ Please provide a helpful travel assistant response following the TRAVEL_ASSISTAN
             role: "assistant",
             content: result.text,
           });
-          console.log(
+          /*console.log(
             "💾 Saved response to memory for session:",
             currentSessionId
-          );
+          );*/
         }
 
         // Handle tool-only responses (weather queries that don't generate text)
-        if (
+        /*if (
           result.toolCalls &&
           result.toolCalls.length > 0 &&
           (!result.text || result.text.length === 0)
@@ -190,11 +190,11 @@ Please provide a helpful travel assistant response following the TRAVEL_ASSISTAN
           console.log(
             "🔧 Tool-only response detected - this needs follow-up handling"
           );
-        }
+        }*/
       },
     });
 
-    console.log("🔄 Creating stream response...", result);
+    //console.log("🔄 Creating stream response...", result);
 
     // Return AI SDK UI compatible stream
     const streamResponse = result.toTextStreamResponse({
@@ -206,7 +206,7 @@ Please provide a helpful travel assistant response following the TRAVEL_ASSISTAN
       },
     });
 
-    console.log("✅ Stream response created successfully", streamResponse);
+    //console.log("✅ Stream response created successfully", streamResponse);
     return streamResponse;
   } catch (error) {
     return new Response(
