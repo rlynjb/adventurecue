@@ -50,6 +50,8 @@ const streamTextResult = async (
     },
   });
 
+  console.log(result);
+
   const streamResponse = await result.toTextStreamResponse({
     headers: {
       "x-session-id": currentSessionId || "",
@@ -58,6 +60,8 @@ const streamTextResult = async (
       Connection: "keep-alive",
     },
   });
+
+  console.log("🚀 Stream response ready", streamResponse);
 
   return streamResponse;
 };
@@ -130,32 +134,7 @@ Please provide a helpful travel assistant response following the TRAVEL_ASSISTAN
     }
 
     // For non-weather queries, use normal flow without tools
-    const result = await streamText({
-      model: openai("gpt-4-turbo"),
-      messages,
-      temperature: 0.7,
-      tools: undefined,
-      onFinish: async (result) => {
-        if (currentSessionId && result.text) {
-          await saveChatMessage({
-            session_id: currentSessionId,
-            role: "assistant",
-            content: result.text,
-          });
-        }
-      },
-    });
-
-    const streamResponse = result.toTextStreamResponse({
-      headers: {
-        "x-session-id": currentSessionId || "",
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
-
-    return streamResponse;
+    return await streamTextResult(messages, currentSessionId);
   } catch (error) {
     return new Response(
       JSON.stringify({
