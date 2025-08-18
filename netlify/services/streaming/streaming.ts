@@ -1,14 +1,21 @@
 import { openai } from "@ai-sdk/openai";
-import { CoreMessage, streamText, tool } from "ai";
-import { z } from "zod";
+import { CoreMessage, streamText } from "ai";
 import { generateContext } from "../embedding";
 import { saveChatMessage } from "../memory";
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
 import { fetchWeatherData, handleChatMemory } from "./utils";
 
 /**
+ * @note
+ *
+ * look into why AI SDK Core tool isnt working.
+ * Go through docs and examples to ensure correct usage
+ */
+
+/**
  * Enhanced tool definitions for AI SDK - using Zod schemas
  */
+/*
 const tools = {
   weather: tool({
     description: "Get the weather in a location",
@@ -20,6 +27,7 @@ const tools = {
     },
   }),
 };
+*/
 
 /**
  * Handle streaming responses using AI SDK Core with memory support
