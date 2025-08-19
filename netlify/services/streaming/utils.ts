@@ -1,3 +1,5 @@
+import { openai } from "@ai-sdk/openai";
+import { CoreMessage, streamText } from "ai";
 import {
   createChatSession,
   generateSessionId,
@@ -136,3 +138,39 @@ export async function fetchWeatherData(location: string) {
     };
   }
 }
+
+export const streamTextResult = async (
+  message: CoreMessage[],
+  currentSessionId: string
+) => {
+  const result = await streamText({
+    model: openai("gpt-4-turbo"),
+    messages: message,
+    temperature: 0.7,
+    tools: undefined,
+    onFinish: async (result) => {
+      if (currentSessionId && result.text) {
+        await saveChatMessage({
+          session_id: currentSessionId,
+          role: "assistant",
+          content: result.text,
+        });
+      }
+    },
+  });
+
+  console.log(result);
+
+  const streamResponse = await result.toTextStreamResponse({
+    headers: {
+      "x-session-id": currentSessionId || "",
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+
+  console.log("🚀 Stream response ready", streamResponse);
+
+  return streamResponse;
+};

@@ -1,70 +1,7 @@
-import { openai } from "@ai-sdk/openai";
-import { CoreMessage, streamText } from "ai";
+import { CoreMessage } from "ai";
 import { generateContext } from "../embedding";
-import { saveChatMessage } from "../memory";
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
-import { fetchWeatherData, handleChatMemory } from "./utils";
-
-/**
- * @note
- *
- * look into why AI SDK Core tool isnt working.
- * Go through docs and examples to ensure correct usage
- */
-
-/**
- * Enhanced tool definitions for AI SDK - using Zod schemas
- */
-/*
-const tools = {
-  weather: tool({
-    description: "Get the weather in a location",
-    inputSchema: z.object({
-      location: z.string().describe("The location to get the weather for"),
-    }),
-    execute: async ({ location }) => {
-      return await fetchWeatherData(location);
-    },
-  }),
-};
-*/
-
-// Generate response with weather data included
-const streamTextResult = async (
-  message: CoreMessage[],
-  currentSessionId: string
-) => {
-  const result = await streamText({
-    model: openai("gpt-4-turbo"),
-    messages: message,
-    temperature: 0.7,
-    tools: undefined,
-    onFinish: async (result) => {
-      if (currentSessionId && result.text) {
-        await saveChatMessage({
-          session_id: currentSessionId,
-          role: "assistant",
-          content: result.text,
-        });
-      }
-    },
-  });
-
-  console.log(result);
-
-  const streamResponse = await result.toTextStreamResponse({
-    headers: {
-      "x-session-id": currentSessionId || "",
-      "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
-
-  console.log("🚀 Stream response ready", streamResponse);
-
-  return streamResponse;
-};
+import { fetchWeatherData, handleChatMemory, streamTextResult } from "./utils";
 
 /**
  * Handle streaming responses using AI SDK Core with memory support
@@ -101,7 +38,16 @@ ${contextText}`;
       data.query.toLowerCase().includes("climate");
 
     // For weather queries, we need special handling to ensure text responses
+    /**
+     * @todo refactor
+     * params:
+     * - data: query string
+     * - currentSessionId: session ID for memory
+     * - conversationHistory: recent messages for context
+     * returns: Response with streaming text (streamTextResult)
+     */
     if (isWeatherQuery) {
+      // @todo generateWeather
       // Execute weather tool first to get the data
       const weatherLocation = data.query.toLowerCase().includes("seattle")
         ? "Seattle"
