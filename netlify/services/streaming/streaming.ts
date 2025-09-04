@@ -1,7 +1,7 @@
 import { CoreMessage } from "ai";
 import { generateContext } from "../embedding";
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
-import { fetchWeatherData } from "./tools/weather";
+import { generateWeather } from "./tools/weather";
 import { handleChatMemory, streamTextResult } from "./utils";
 
 /**
@@ -39,45 +39,17 @@ ${contextText}`;
       data.query.toLowerCase().includes("climate");
 
     // For weather queries, we need special handling to ensure text responses
-    /**
-     * @todo refactor
-     * params:
-     * - data: query string
-     * - currentSessionId: session ID for memory
-     * - conversationHistory: recent messages for context
-     * returns: Response with streaming text (streamTextResult)
-     */
     if (isWeatherQuery) {
-      // @todo generateWeather
-      // Execute weather tool first to get the data
-      const weatherLocation = data.query.toLowerCase().includes("seattle")
-        ? "Seattle"
-        : "current location";
+      const resWeather = await generateWeather(
+        data.query,
+        currentSessionId,
+        conversationHistory,
+        systemPromptWithContext
+      );
 
-      try {
-        const weatherResult = await fetchWeatherData(weatherLocation);
-
-        // Create a new prompt that includes the weather data and asks for a formatted response
-        const weatherPromptWithData = `The user asked: "${data.query}"
-
-I have retrieved the current weather data: ${JSON.stringify(
-          weatherResult,
-          null,
-          2
-        )}
-
-Please provide a helpful travel assistant response following the TRAVEL_ASSISTANT_SYSTEM_PROMPT format. Include the weather information in the specified JSON markdown code block format as outlined in the system prompt.`;
-
-        const weatherMessages: CoreMessage[] = [
-          { role: "system", content: systemPromptWithContext },
-          ...conversationHistory,
-          { role: "user", content: weatherPromptWithData },
-        ];
-
-        return await streamTextResult(weatherMessages, currentSessionId);
-      } catch (error) {
-        console.error("❌ Error in manual weather handling:", error);
-      }
+      return resWeather
+        ? resWeather
+        : new Response("Error generating weather response", { status: 500 });
     }
 
     // For non-weather queries, use normal flow without tools

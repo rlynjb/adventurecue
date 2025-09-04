@@ -1,3 +1,47 @@
+import { CoreMessage } from "ai";
+import { streamTextResult } from "../utils";
+
+export const generateWeather = async (
+  query: string,
+  currentSessionId: string,
+  conversationHistory: CoreMessage[],
+  systemPromptWithContext: string
+) => {
+  // Execute weather tool first to get the data
+  /**
+   * @todo
+   * change this to detect location from user.
+   */
+  const weatherLocation = query.toLowerCase().includes("seattle")
+    ? "Seattle"
+    : "current location";
+
+  try {
+    const weatherResult = await fetchWeatherData(weatherLocation);
+
+    // Create a new prompt that includes the weather data and asks for a formatted response
+    const weatherPromptWithData = `The user asked: "${query}"
+
+I have retrieved the current weather data: ${JSON.stringify(
+      weatherResult,
+      null,
+      2
+    )}
+
+Please provide a helpful travel assistant response following the TRAVEL_ASSISTANT_SYSTEM_PROMPT format. Include the weather information in the specified JSON markdown code block format as outlined in the system prompt.`;
+
+    const weatherMessages: CoreMessage[] = [
+      { role: "system", content: systemPromptWithContext },
+      ...conversationHistory,
+      { role: "user", content: weatherPromptWithData },
+    ];
+
+    return await streamTextResult(weatherMessages, currentSessionId);
+  } catch (error) {
+    console.error("❌ Error in manual weather handling:", error);
+  }
+};
+
 // Helper function to convert weather codes to descriptions
 export function getWeatherDescription(code: number): string {
   const weatherCodes: Record<number, string> = {
