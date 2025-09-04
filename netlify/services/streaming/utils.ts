@@ -1,3 +1,5 @@
+import { openai } from "@ai-sdk/openai";
+import { CoreMessage, streamText } from "ai";
 import {
   createChatSession,
   generateSessionId,
@@ -59,80 +61,38 @@ export async function handleChatMemory(data: {
   return { sessionId: currentSessionId, conversationHistory };
 }
 
-// Helper function to convert weather codes to descriptions
-export function getWeatherDescription(code: number): string {
-  const weatherCodes: Record<number, string> = {
-    0: "Clear sky",
-    1: "Mainly clear",
-    2: "Partly cloudy",
-    3: "Overcast",
-    45: "Foggy",
-    48: "Depositing rime fog",
-    51: "Light drizzle",
-    53: "Moderate drizzle",
-    55: "Dense drizzle",
-    61: "Slight rain",
-    63: "Moderate rain",
-    65: "Heavy rain",
-    71: "Slight snow",
-    73: "Moderate snow",
-    75: "Heavy snow",
-    80: "Slight rain showers",
-    81: "Moderate rain showers",
-    82: "Violent rain showers",
-    95: "Thunderstorm",
-    96: "Thunderstorm with slight hail",
-    99: "Thunderstorm with heavy hail",
-  };
+export const streamTextResult = async (
+  message: CoreMessage[],
+  currentSessionId: string
+) => {
+  const result = await streamText({
+    model: openai("gpt-4-turbo"),
+    messages: message,
+    temperature: 0.7,
+    tools: undefined,
+    onFinish: async (result) => {
+      if (currentSessionId && result.text) {
+        await saveChatMessage({
+          session_id: currentSessionId,
+          role: "assistant",
+          content: result.text,
+        });
+      }
+    },
+  });
 
-  return weatherCodes[code] || "Unknown conditions";
-}
+  console.log(result);
 
-// Centralized weather data fetching function
-export async function fetchWeatherData(location: string) {
-  console.log("🌤️ Fetching weather data for location:", location);
+  const streamResponse = await result.toTextStreamResponse({
+    headers: {
+      "x-session-id": currentSessionId || "",
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 
-  try {
-    // Use Open-Meteo API for real weather data
-    const geocodingResponse = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-        location
-      )}&count=1`
-    );
-    const geocodingData = await geocodingResponse.json();
+  console.log("🚀 Stream response ready", streamResponse);
 
-    if (!geocodingData.results || geocodingData.results.length === 0) {
-      return {
-        location,
-        error: "Location not found",
-      };
-    }
-
-    const { latitude, longitude, name, country } = geocodingData.results[0];
-
-    // Get current weather
-    const weatherResponse = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`
-    );
-    const weatherData = await weatherResponse.json();
-
-    const result = {
-      location: `${name}, ${country}`,
-      temperature: Math.round(weatherData.current.temperature_2m),
-      humidity: weatherData.current.relative_humidity_2m,
-      windSpeed: weatherData.current.wind_speed_10m,
-      conditions: getWeatherDescription(weatherData.current.weather_code),
-      timestamp: new Date().toISOString(),
-    };
-
-    console.log("✅ Weather data retrieved:", result);
-    return result;
-  } catch (error) {
-    console.error("❌ Weather API error:", error);
-    return {
-      location,
-      error: "Failed to fetch weather data",
-      fallbackTemp: 72 + Math.floor(Math.random() * 21) - 10,
-    };
-  }
-}
+  return streamResponse;
+};
