@@ -81,7 +81,7 @@ export const streamTextResult = async (
     },
   });
 
-  console.log(result);
+  console.log({ result });
 
   const streamResponse = await result.toTextStreamResponse({
     headers: {

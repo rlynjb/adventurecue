@@ -9,12 +9,6 @@ import {
 } from "../../types";
 import { validateRequest } from "./validation";
 
-/**
- * Enhanced query handler with real-time status updates and memory support
- *
- * Streaming: Uses AI SDK Core for streaming responses compatible with AI SDK UI
- * Non-streaming: Uses existing generateAnswer with status tracking
- */
 const handler = async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });

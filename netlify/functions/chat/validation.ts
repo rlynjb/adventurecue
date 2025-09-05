@@ -1,11 +1,5 @@
 import { RequestBody, ValidateRequest } from "../../types";
 
-/**
- * Handles input validation for chat requests
- *
- * Validates the request body to ensure it contains a valid query string and optional parameters.
- * @returns An object containing the validation result and any extracted data
- */
 export const validateRequest = (
   body: RequestBody | null | undefined
 ): ValidateRequest => {

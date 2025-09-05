@@ -38,8 +38,16 @@ ${contextText}`;
       data.query.toLowerCase().includes("forecast") ||
       data.query.toLowerCase().includes("climate");
 
+    console.log({ messages });
+
     // For weather queries, we need special handling to ensure text responses
     if (isWeatherQuery) {
+      console.log({
+        data,
+        currentSessionId,
+        conversationHistory,
+        systemPromptWithContext,
+      });
       const resWeather = await generateWeather(
         data.query,
         currentSessionId,

@@ -7,12 +7,17 @@ export const generateWeather = async (
   conversationHistory: CoreMessage[],
   systemPromptWithContext: string
 ) => {
-  // Execute weather tool first to get the data
   /**
    * @todo
    * change this to detect location from user.
    */
-  const weatherLocation = query.toLowerCase().includes("seattle")
+  const combineQueryConversation =
+    query + " " + conversationHistory.map((msg) => msg.content).join(" ");
+  console.log("🌤️ Weather-related query detected:", combineQueryConversation);
+
+  const weatherLocation = combineQueryConversation
+    .toLowerCase()
+    .includes("seattle")
     ? "Seattle"
     : "current location";
 
