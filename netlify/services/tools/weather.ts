@@ -1,5 +1,5 @@
 import { CoreMessage } from "ai";
-import { streamTextResult } from "../utils";
+import { streamTextResult } from "../streaming/utils";
 
 export const generateWeather = async (
   query: string,

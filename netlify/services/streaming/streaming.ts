@@ -1,7 +1,7 @@
 import { CoreMessage } from "ai";
 import { generateContext } from "../embedding";
 import { TRAVEL_ASSISTANT_SYSTEM_PROMPT } from "../prompts";
-import { generateWeather } from "./tools/weather";
+import { generateWeather } from "../tools/weather";
 import { handleChatMemory, streamTextResult } from "./utils";
 
 /**
