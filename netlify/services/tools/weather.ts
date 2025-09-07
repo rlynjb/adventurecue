@@ -13,7 +13,6 @@ export const generateWeather = async (
    */
   const combineQueryConversation =
     query + " " + conversationHistory.map((msg) => msg.content).join(" ");
-  console.log("🌤️ Weather-related query detected:", combineQueryConversation);
 
   const weatherLocation = combineQueryConversation
     .toLowerCase()
@@ -76,10 +75,7 @@ export function getWeatherDescription(code: number): string {
   return weatherCodes[code] || "Unknown conditions";
 }
 
-// Centralized weather data fetching function
 export async function fetchWeatherData(location: string) {
-  console.log("🌤️ Fetching weather data for location:", location);
-
   try {
     // Use Open-Meteo API for real weather data
     const geocodingResponse = await fetch(
@@ -113,13 +109,11 @@ export async function fetchWeatherData(location: string) {
       timestamp: new Date().toISOString(),
     };
 
-    console.log("✅ Weather data retrieved:", result);
     return result;
   } catch (error) {
-    console.error("❌ Weather API error:", error);
     return {
       location,
-      error: "Failed to fetch weather data",
+      error: "Failed to fetch weather data" + error,
       fallbackTemp: 72 + Math.floor(Math.random() * 21) - 10,
     };
   }
