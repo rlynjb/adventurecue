@@ -38,6 +38,11 @@ ${contextText}`;
       data.query.toLowerCase().includes("forecast") ||
       data.query.toLowerCase().includes("climate");
 
+    /**
+     * @todo
+     * convert this into a switch statement for multiple tools
+     * or check into a design pattern for scalability
+     */
     // For weather queries, we need special handling to ensure text responses
     if (isWeatherQuery) {
       const resWeather = await generateWeather(

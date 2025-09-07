@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 //import { ChatStatusMessages, ChatStatusTracker } from "../status";
 
+/**
+ * @todo
+ * check if this file can be deleted
+ * as its similar to chat.ts
+ */
 export const openAITools = [
   { type: "web_search_preview" },
   { type: "web_search_preview_2025_03_11" },
