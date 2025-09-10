@@ -5,6 +5,30 @@ import { generateWeather } from "../tools/weather";
 import { handleChatMemory, streamTextResult } from "./utils";
 
 /**
+ *  @todo
+ *  Implement comprehensive autonomous AI capabilities that enable AdventureCue to reason, plan, and execute complex multi-step tasks independently.
+
+    Core Components
+    - Autonomous Decision Making System
+    -- Multi-step reasoning implementation
+    -- Dynamic tool selection and orchestration
+    -- Self-reflection and error correction
+    -- Goal-oriented conversation management
+    -- Advanced Agentic Behaviors
+
+    - Proactive information gathering
+    -- Multi-turn tool execution workflows
+    -- Adaptive response strategies
+    -- Context-aware planning and execution
+
+    - Workflow Management
+    -- State management for complex workflows
+    -- Tool dependency resolution and execution ordering
+    -- Response quality evaluation and iteration
+    -- Error recovery and fallback strategies
+ */
+
+/**
  * Handle streaming responses using AI SDK Core with memory support
  * Returns AI SDK UI compatible streaming response
  */
@@ -18,6 +42,12 @@ export async function handleStreamingRequest(data: {
 
     const contextText = await generateContext(data);
 
+    /**
+     * @todo
+     * look into a more scalable way to handle Prompts with Context
+     * as this is repeated in multiple places
+     * maybe create a helper function
+     */
     // 3. GENERATION PHASE
     // Build messages for AI SDK - include context in system message instead
     const systemPromptWithContext = `${TRAVEL_ASSISTANT_SYSTEM_PROMPT}
@@ -56,6 +86,16 @@ ${contextText}`;
         ? resWeather
         : new Response("Error generating weather response", { status: 500 });
     }
+
+    /**
+     * @todo
+     * implement web search tool handling here as well
+     */
+
+    /**
+     * @todo
+     * implement foundation architecture MCP tool handling here as well
+     */
 
     // For non-weather queries, use normal flow without tools
     return await streamTextResult(messages, currentSessionId);
