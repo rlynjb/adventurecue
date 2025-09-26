@@ -2,12 +2,8 @@
 
 import { useState } from "react";
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
+import { streamChat, type Message } from "../utils";
+import "./styles.css";
 
 export default function Home() {
   const [input, setInput] = useState("");
@@ -18,6 +14,7 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (input.trim() && !isLoading) {
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -30,73 +27,54 @@ export default function Home() {
       setIsLoading(true);
       setError(null);
 
-      try {
-        const response = await fetch("/.netlify/functions/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: userMessage.content,
-            sessionId: sessionId || undefined,
-            streaming: true,
-          }),
-        });
+      // Create assistant message placeholder
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "",
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      // Use the composable API utility
+      const newSessionId = await streamChat(
+        {
+          query: userMessage.content,
+          sessionId: sessionId || undefined,
+          streaming: true,
+        },
+        // onChunk - handle streaming content
+        (chunk: string) => {
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage.role === "assistant") {
+              lastMessage.content += chunk;
+            }
+            return newMessages;
+          });
+        },
+        // onComplete - handle completion
+        () => {
+          setIsLoading(false);
+        },
+        // onError - handle errors
+        (errorMessage: string) => {
+          setError(errorMessage);
+          setIsLoading(false);
+          // Remove the empty assistant message on error
+          setMessages((prev) => prev.slice(0, -1));
         }
+      );
 
-        // Capture session ID from response headers
-        const responseSessionId = response.headers.get("x-session-id");
-        if (responseSessionId && !sessionId) {
-          setSessionId(responseSessionId);
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error("No response body");
-        }
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: "",
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
-
-        const decoder = new TextDecoder();
-        let done = false;
-
-        while (!done) {
-          const { value, done: readerDone } = await reader.read();
-          done = readerDone;
-
-          if (value) {
-            const chunk = decoder.decode(value);
-
-            // Update the last message (assistant) with streaming content
-            setMessages((prev) => {
-              const newMessages = [...prev];
-              const lastMessage = newMessages[newMessages.length - 1];
-              if (lastMessage.role === "assistant") {
-                lastMessage.content += chunk;
-              }
-              return newMessages;
-            });
-          }
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setIsLoading(false);
+      // Update session ID if we got a new one
+      if (newSessionId && !sessionId) {
+        setSessionId(newSessionId);
       }
     }
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-2xl mx-auto">
+    <div className="aq-chatbot flex flex-col h-screen max-w-2xl mx-auto">
       <header className="p-4 flex-shrink-0">
         <h2 className="text-2xl font-semibold text-slate-500">
           advntrQ Chatbot
