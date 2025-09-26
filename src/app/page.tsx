@@ -76,7 +76,7 @@ export default function Home() {
   const RenderMessageType = (message: Message) => {
     if (message.role === "user") {
       return (
-        <div key={message.id} className="aq-chatbot--message bg-blue-600 ml-28">
+        <div key={message.id} className="aq-chatbot--message bg-blue-600 ml-12">
           <div className="aq-chatbot--message__label">You</div>
           {message.content}
         </div>
@@ -85,7 +85,7 @@ export default function Home() {
 
     if (message.role === "assistant") {
       return (
-        <div key={message.id} className="aq-chatbot--message bg-gray-800 mr-28">
+        <div key={message.id} className="aq-chatbot--message bg-gray-800 mr-12">
           <div className="aq-chatbot--message__label">Assistant</div>
           <MarkdownRenderer content={message.content} />
 

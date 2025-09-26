@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@reference;
 
 .aq-chatbot {
   @apply flex flex-col h-screen max-w-2xl mx-auto;
