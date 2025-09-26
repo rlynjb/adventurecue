@@ -7,12 +7,16 @@ export const generateWeather = async (
   conversationHistory: CoreMessage[],
   systemPromptWithContext: string
 ) => {
-  // Execute weather tool first to get the data
   /**
    * @todo
    * change this to detect location from user.
    */
-  const weatherLocation = query.toLowerCase().includes("seattle")
+  const combineQueryConversation =
+    query + " " + conversationHistory.map((msg) => msg.content).join(" ");
+
+  const weatherLocation = combineQueryConversation
+    .toLowerCase()
+    .includes("seattle")
     ? "Seattle"
     : "current location";
 
@@ -71,10 +75,7 @@ export function getWeatherDescription(code: number): string {
   return weatherCodes[code] || "Unknown conditions";
 }
 
-// Centralized weather data fetching function
 export async function fetchWeatherData(location: string) {
-  console.log("🌤️ Fetching weather data for location:", location);
-
   try {
     // Use Open-Meteo API for real weather data
     const geocodingResponse = await fetch(
@@ -108,13 +109,11 @@ export async function fetchWeatherData(location: string) {
       timestamp: new Date().toISOString(),
     };
 
-    console.log("✅ Weather data retrieved:", result);
     return result;
   } catch (error) {
-    console.error("❌ Weather API error:", error);
     return {
       location,
-      error: "Failed to fetch weather data",
+      error: "Failed to fetch weather data" + error,
       fallbackTemp: 72 + Math.floor(Math.random() * 21) - 10,
     };
   }

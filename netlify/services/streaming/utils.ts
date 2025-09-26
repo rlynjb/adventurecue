@@ -48,16 +48,6 @@ export async function handleChatMemory(data: {
     content: msg.content,
   }));
 
-  /*
-  console.log("Session ID:", currentSessionId);
-  console.log(
-    "Conversation History:",
-    conversationHistory.length,
-    "messages"
-  );
-  console.log("History preview:", conversationHistory.slice(-2)); // Last 2 messages
-  */
-
   return { sessionId: currentSessionId, conversationHistory };
 }
 
@@ -81,8 +71,6 @@ export const streamTextResult = async (
     },
   });
 
-  console.log(result);
-
   const streamResponse = await result.toTextStreamResponse({
     headers: {
       "x-session-id": currentSessionId || "",
@@ -91,8 +79,6 @@ export const streamTextResult = async (
       Connection: "keep-alive",
     },
   });
-
-  console.log("🚀 Stream response ready", streamResponse);
 
   return streamResponse;
 };
