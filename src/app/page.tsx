@@ -74,7 +74,7 @@ export default function Home() {
   };
 
   return (
-    <div className="aq-chatbot flex flex-col h-screen max-w-2xl mx-auto">
+    <div className="aq-chatbot">
       <header className="p-4 flex-shrink-0">
         <h2 className="text-2xl font-semibold text-slate-500">
           advntrQ Chatbot
