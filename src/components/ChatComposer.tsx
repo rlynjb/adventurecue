@@ -1,4 +1,5 @@
 import React from "react";
+import { UI_CONFIG } from "../constants/chat";
 
 interface ChatComposerProps {
   input: string;
@@ -18,7 +19,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
       <input
         className="aq-chatbot--composer__input"
         value={input}
-        placeholder="Ask me anything..."
+        placeholder={UI_CONFIG.PLACEHOLDER_TEXT}
         onChange={(e) => setInput(e.target.value)}
         disabled={isLoading}
       />
@@ -27,7 +28,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
         disabled={isLoading || !input.trim()}
         className="aq-chatbot--composer__submit"
       >
-        Send
+        {UI_CONFIG.SUBMIT_BUTTON_TEXT}
       </button>
     </form>
   </div>

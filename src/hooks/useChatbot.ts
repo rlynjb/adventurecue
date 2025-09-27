@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MESSAGE_TYPES } from "../constants/chat";
 import { streamChat, type Message } from "../utils";
 
 export const useChatbot = () => {
@@ -16,7 +17,7 @@ export const useChatbot = () => {
     if (input.trim() && !isLoading) {
       const userMessage: Message = {
         id: Date.now().toString(),
-        role: "user",
+        role: MESSAGE_TYPES.USER,
         content: input.trim(),
       };
 
@@ -28,7 +29,7 @@ export const useChatbot = () => {
       // Create assistant message placeholder
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: "assistant",
+        role: MESSAGE_TYPES.ASSISTANT,
         content: "",
       };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -45,7 +46,7 @@ export const useChatbot = () => {
           setMessages((prev) => {
             const newMessages = [...prev];
             const lastMessage = newMessages[newMessages.length - 1];
-            if (lastMessage.role === "assistant") {
+            if (lastMessage.role === MESSAGE_TYPES.ASSISTANT) {
               lastMessage.content += chunk;
             }
             return newMessages;
