@@ -23,11 +23,12 @@ export default function Home() {
       <ChatHeader sessionId={sessionId} />
 
       <div className="aq-chatbot--messages">
-        {messages.map((message) => (
+        {messages.map((message, index) => (
           <MessageItem
             key={message.id}
             message={message}
             isLoading={isLoading}
+            isLastMessage={index === messages.length - 1}
           />
         ))}
       </div>

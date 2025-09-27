@@ -4,9 +4,14 @@ import { type Message } from "../utils";
 interface MessageItemProps {
   message: Message;
   isLoading: boolean;
+  isLastMessage?: boolean;
 }
 
-export const MessageItem = ({ message, isLoading }: MessageItemProps) => {
+export const MessageItem = ({
+  message,
+  isLoading,
+  isLastMessage = false,
+}: MessageItemProps) => {
   if (message.role === "user") {
     return (
       <div key={message.id} className="aq-chatbot--message bg-blue-600 ml-12">
@@ -22,7 +27,7 @@ export const MessageItem = ({ message, isLoading }: MessageItemProps) => {
         <div className="aq-chatbot--message__label">Assistant</div>
         <MarkdownRenderer content={message.content} />
 
-        {isLoading && (
+        {isLoading && isLastMessage && (
           <div className="aq-chatbot--loading">
             <div className="animate-pulse">●</div>
             <div>Assistant is typing...</div>

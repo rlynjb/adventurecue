@@ -3,5 +3,5 @@ interface ErrorDisplayProps {
 }
 
 export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ error }) => (
-  <div className="aq-chatbot--error">Error: {error}</div>
+  <>{error && <div className="aq-chatbot--error">Error: {error}</div>}</>
 );
