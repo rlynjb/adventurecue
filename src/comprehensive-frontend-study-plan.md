@@ -306,6 +306,264 @@ const useAIRecommendations = (userId: string, preferences: UserPreferences) => {
 };
 ```
 
+**Alternative Practice Project**: Agentic AI RAG Chat Interface (Based on AdventureCue)
+
+```typescript
+// Advanced RAG chat hook with agentic capabilities
+const useAgenticRAGChat = () => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessionId, setSessionId] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<ProcessingStep[]>(
+    []
+  );
+  const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([]);
+
+  // Streaming chat with real-time status updates
+  const sendMessage = useCallback(
+    async (content: string) => {
+      setIsLoading(true);
+      setProcessingStatus([]);
+      setToolExecutions([]);
+
+      const userMessage: ChatMessage = {
+        id: generateId(),
+        role: "user",
+        content,
+        timestamp: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+
+      try {
+        // Initialize Server-Sent Events stream for real-time updates
+        const response = await fetch("/.netlify/functions/agentic-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: content,
+            sessionId: sessionId || undefined,
+            streaming: true,
+          }),
+        });
+
+        if (!response.body) throw new Error("No streaming response");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        let assistantMessage = "";
+        const assistantMsgId = generateId();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+
+                switch (data.type) {
+                  case "session_info":
+                    if (data.sessionId && !sessionId) {
+                      setSessionId(data.sessionId);
+                    }
+                    break;
+
+                  case "status_update":
+                    setProcessingStatus((prev) => [
+                      ...prev,
+                      {
+                        step: data.step,
+                        status: data.status,
+                        duration: data.duration,
+                        metadata: data.metadata,
+                      },
+                    ]);
+                    break;
+
+                  case "tool_execution":
+                    setToolExecutions((prev) => [
+                      ...prev,
+                      {
+                        tool: data.tool,
+                        input: data.input,
+                        output: data.output,
+                        duration: data.duration,
+                        status: data.status,
+                      },
+                    ]);
+                    break;
+
+                  case "context_retrieved":
+                    setProcessingStatus((prev) => [
+                      ...prev,
+                      {
+                        step: "context_retrieval",
+                        status: "complete",
+                        metadata: {
+                          sources: data.sources.length,
+                          relevanceScores: data.sources.map(
+                            (s) => s.similarity
+                          ),
+                        },
+                      },
+                    ]);
+                    break;
+
+                  case "content_chunk":
+                    assistantMessage += data.content;
+                    setMessages((prev) => {
+                      const updated = [...prev];
+                      const existingMsg = updated.find(
+                        (m) => m.id === assistantMsgId
+                      );
+                      if (existingMsg) {
+                        existingMsg.content = assistantMessage;
+                        existingMsg.metadata = {
+                          ...existingMsg.metadata,
+                          confidence: data.confidence,
+                          sources: data.sources,
+                        };
+                      } else {
+                        updated.push({
+                          id: assistantMsgId,
+                          role: "assistant",
+                          content: assistantMessage,
+                          timestamp: Date.now(),
+                          metadata: {
+                            confidence: data.confidence,
+                            sources: data.sources,
+                            toolsUsed: toolExecutions.map((t) => t.tool),
+                          },
+                        });
+                      }
+                      return updated;
+                    });
+                    break;
+
+                  case "complete":
+                    setIsLoading(false);
+                    setProcessingStatus((prev) => [
+                      ...prev,
+                      {
+                        step: "generation_complete",
+                        status: "complete",
+                        metadata: {
+                          totalDuration: data.totalDuration,
+                          tokensGenerated: data.tokensGenerated,
+                        },
+                      },
+                    ]);
+                    break;
+
+                  case "error":
+                    setIsLoading(false);
+                    setProcessingStatus((prev) => [
+                      ...prev,
+                      {
+                        step: "error",
+                        status: "error",
+                        metadata: { error: data.message },
+                      },
+                    ]);
+                    break;
+                }
+              } catch (e) {
+                console.error("Failed to parse streaming data:", e);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        setIsLoading(false);
+        console.error("Agentic chat error:", error);
+
+        // Add error message to chat
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: generateId(),
+            role: "assistant",
+            content:
+              "I apologize, but I encountered an error processing your request. Please try again.",
+            timestamp: Date.now(),
+            metadata: { error: true },
+          },
+        ]);
+      }
+    },
+    [sessionId]
+  );
+
+  const clearChat = useCallback(() => {
+    setMessages([]);
+    setSessionId("");
+    setProcessingStatus([]);
+    setToolExecutions([]);
+  }, []);
+
+  return {
+    messages,
+    sessionId,
+    isLoading,
+    processingStatus,
+    toolExecutions,
+    sendMessage,
+    clearChat,
+  };
+};
+
+// Enhanced chat message types for agentic RAG systems
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: number;
+  metadata?: {
+    confidence?: number;
+    sources?: RetrievedSource[];
+    toolsUsed?: string[];
+    reasoning?: string[];
+    embeddings?: number[];
+    error?: boolean;
+  };
+}
+
+interface ProcessingStep {
+  step: string;
+  status: "pending" | "active" | "complete" | "error" | "skipped";
+  duration?: number;
+  metadata?: {
+    sources?: number;
+    relevanceScores?: number[];
+    error?: string;
+    totalDuration?: number;
+    tokensGenerated?: number;
+  };
+}
+
+interface ToolExecution {
+  tool: string;
+  input: any;
+  output: any;
+  duration: number;
+  status: "executing" | "complete" | "error";
+  error?: string;
+}
+
+interface RetrievedSource {
+  content: string;
+  similarity: number;
+  source: string;
+  chunkIndex?: number;
+}
+```
+
 #### Day 3-4: Component Architecture for Complex Systems
 
 - [ ] **Compound Components**: Flexible AI dashboard layouts
@@ -364,6 +622,203 @@ const Dashboard.Content = ({ children }) => (
 // </Dashboard>
 ```
 
+**Alternative Practice Project**: Agentic RAG Dashboard Component System
+
+```typescript
+// Advanced compound component pattern for agentic RAG interfaces
+interface AgenticDashboardContextType {
+  selectedModel: string;
+  activeSession: string | null;
+  processingStatus: ProcessingStep[];
+  toolExecutions: ToolExecution[];
+  contextSources: RetrievedSource[];
+  updateModel: (model: string) => void;
+  setActiveSession: (sessionId: string) => void;
+  clearProcessingHistory: () => void;
+}
+
+const AgenticDashboard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [selectedModel, setSelectedModel] = useState("gpt-4-turbo");
+  const [activeSession, setActiveSession] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<ProcessingStep[]>([]);
+  const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([]);
+  const [contextSources, setContextSources] = useState<RetrievedSource[]>([]);
+
+  const contextValue: AgenticDashboardContextType = {
+    selectedModel,
+    activeSession,
+    processingStatus,
+    toolExecutions,
+    contextSources,
+    updateModel: setSelectedModel,
+    setActiveSession,
+    clearProcessingHistory: () => {
+      setProcessingStatus([]);
+      setToolExecutions([]);
+      setContextSources([]);
+    }
+  };
+
+  return (
+    <AgenticDashboardContext.Provider value={contextValue}>
+      <div className="agentic-dashboard" data-model={selectedModel}>
+        {children}
+      </div>
+    </AgenticDashboardContext.Provider>
+  );
+};
+
+const AgenticDashboard.Header = ({ children }: { children: React.ReactNode }) => (
+  <div className="agentic-dashboard-header">
+    {children}
+  </div>
+);
+
+const AgenticDashboard.ModelSelector = () => {
+  const { selectedModel, updateModel } = useContext(AgenticDashboardContext);
+
+  return (
+    <select
+      value={selectedModel}
+      onChange={(e) => updateModel(e.target.value)}
+      className="model-selector"
+    >
+      <option value="gpt-4-turbo">GPT-4 Turbo</option>
+      <option value="gpt-4">GPT-4</option>
+      <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+    </select>
+  );
+};
+
+const AgenticDashboard.ProcessingPanel = () => {
+  const { processingStatus, toolExecutions } = useContext(AgenticDashboardContext);
+
+  return (
+    <div className="processing-panel">
+      <h3>Processing Status</h3>
+      <div className="status-timeline">
+        {processingStatus.map((step, index) => (
+          <div
+            key={index}
+            className={`status-step status-step--${step.status}`}
+          >
+            <div className="step-indicator" />
+            <div className="step-content">
+              <span className="step-name">{step.step}</span>
+              {step.duration && (
+                <span className="step-duration">{step.duration}ms</span>
+              )}
+              {step.metadata && (
+                <div className="step-metadata">
+                  {JSON.stringify(step.metadata, null, 2)}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {toolExecutions.length > 0 && (
+        <div className="tool-executions">
+          <h4>Tool Executions</h4>
+          {toolExecutions.map((execution, index) => (
+            <div key={index} className="tool-execution">
+              <div className="tool-name">{execution.tool}</div>
+              <div className="tool-status">{execution.status}</div>
+              <div className="tool-duration">{execution.duration}ms</div>
+              {execution.error && (
+                <div className="tool-error">{execution.error}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AgenticDashboard.ContextPanel = () => {
+  const { contextSources } = useContext(AgenticDashboardContext);
+
+  return (
+    <div className="context-panel">
+      <h3>Retrieved Context ({contextSources.length} sources)</h3>
+      <div className="context-sources">
+        {contextSources.map((source, index) => (
+          <div key={index} className="context-source">
+            <div className="source-header">
+              <span className="source-file">{source.source}</span>
+              <span className="similarity-score">
+                {(source.similarity * 100).toFixed(1)}%
+              </span>
+            </div>
+            <div className="source-content">
+              {source.content.length > 200
+                ? `${source.content.substring(0, 200)}...`
+                : source.content
+              }
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const AgenticDashboard.ChatInterface = () => {
+  const { activeSession } = useContext(AgenticDashboardContext);
+  const {
+    messages,
+    isLoading,
+    sendMessage
+  } = useAgenticRAGChat();
+
+  return (
+    <div className="chat-interface">
+      <div className="chat-messages">
+        {messages.map((message) => (
+          <div key={message.id} className={`message message--${message.role}`}>
+            <div className="message-content">{message.content}</div>
+            {message.metadata?.confidence && (
+              <div className="message-metadata">
+                <span className="confidence">
+                  Confidence: {(message.metadata.confidence * 100).toFixed(1)}%
+                </span>
+                {message.metadata.sources && (
+                  <span className="sources-count">
+                    {message.metadata.sources.length} sources
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <ChatComposer
+        onSubmit={sendMessage}
+        isLoading={isLoading}
+        placeholder="Ask anything about your knowledge base..."
+      />
+    </div>
+  );
+};
+
+// Usage:
+// <AgenticDashboard>
+//   <AgenticDashboard.Header>
+//     <h1>Agentic RAG System</h1>
+//     <AgenticDashboard.ModelSelector />
+//   </AgenticDashboard.Header>
+//
+//   <div className="dashboard-content">
+//     <AgenticDashboard.ChatInterface />
+//     <AgenticDashboard.ProcessingPanel />
+//     <AgenticDashboard.ContextPanel />
+//   </div>
+// </AgenticDashboard>
+```
+
 #### Day 5-7: State Management for AI Applications
 
 - [ ] **useState vs useReducer**: When to use each for AI state
@@ -416,6 +871,304 @@ const analysisReducer = (
     // ... other state transitions
   }
 };
+```
+
+**Alternative Practice Project**: Agentic RAG Workflow State Machine
+
+```typescript
+// Advanced state machine for agentic RAG processing workflow
+type AgenticRAGState =
+  | { type: "idle" }
+  | { type: "analyzing_query"; query: string; progress: number }
+  | { type: "planning_execution"; plan: QueryPlan }
+  | { type: "executing_tools"; activeTools: string[]; completed: string[] }
+  | {
+      type: "retrieving_context";
+      embedding: number[];
+      similarity_threshold: number;
+    }
+  | { type: "generating_response"; context: string; streaming: boolean }
+  | { type: "complete"; response: string; metadata: ResponseMetadata }
+  | { type: "error"; error: string; recovery_options: string[] };
+
+type AgenticRAGAction =
+  | { type: "START_QUERY"; query: string }
+  | { type: "QUERY_ANALYZED"; plan: QueryPlan }
+  | { type: "PLAN_APPROVED"; executionOrder: string[] }
+  | { type: "TOOL_STARTED"; tool: string }
+  | { type: "TOOL_COMPLETED"; tool: string; result: any }
+  | { type: "ALL_TOOLS_COMPLETED"; results: ToolResults }
+  | { type: "CONTEXT_RETRIEVED"; context: string; sources: RetrievedSource[] }
+  | { type: "RESPONSE_CHUNK"; chunk: string }
+  | { type: "RESPONSE_COMPLETE"; response: string; metadata: ResponseMetadata }
+  | { type: "ERROR_OCCURRED"; error: string; recoverable: boolean }
+  | { type: "RETRY_OPERATION" }
+  | { type: "RESET" };
+
+const agenticRAGReducer = (
+  state: AgenticRAGState,
+  action: AgenticRAGAction
+): AgenticRAGState => {
+  switch (state.type) {
+    case "idle":
+      return action.type === "START_QUERY"
+        ? { type: "analyzing_query", query: action.query, progress: 0 }
+        : state;
+
+    case "analyzing_query":
+      switch (action.type) {
+        case "QUERY_ANALYZED":
+          return { type: "planning_execution", plan: action.plan };
+        case "ERROR_OCCURRED":
+          return {
+            type: "error",
+            error: action.error,
+            recovery_options: action.recoverable
+              ? ["retry", "simplify_query"]
+              : ["reset"],
+          };
+        default:
+          return state;
+      }
+
+    case "planning_execution":
+      return action.type === "PLAN_APPROVED"
+        ? {
+            type: "executing_tools",
+            activeTools: action.executionOrder,
+            completed: [],
+          }
+        : state;
+
+    case "executing_tools":
+      switch (action.type) {
+        case "TOOL_COMPLETED":
+          const newCompleted = [...state.completed, action.tool];
+          const remainingTools = state.activeTools.filter(
+            (t) => !newCompleted.includes(t)
+          );
+
+          return remainingTools.length === 0
+            ? {
+                type: "retrieving_context",
+                embedding: [],
+                similarity_threshold: 0.7,
+              }
+            : { ...state, completed: newCompleted };
+
+        case "ALL_TOOLS_COMPLETED":
+          return {
+            type: "retrieving_context",
+            embedding: [],
+            similarity_threshold: 0.7,
+          };
+
+        default:
+          return state;
+      }
+
+    case "retrieving_context":
+      return action.type === "CONTEXT_RETRIEVED"
+        ? {
+            type: "generating_response",
+            context: action.context,
+            streaming: true,
+          }
+        : state;
+
+    case "generating_response":
+      switch (action.type) {
+        case "RESPONSE_COMPLETE":
+          return {
+            type: "complete",
+            response: action.response,
+            metadata: action.metadata,
+          };
+        case "ERROR_OCCURRED":
+          return {
+            type: "error",
+            error: action.error,
+            recovery_options: ["retry_generation", "fallback_response"],
+          };
+        default:
+          return state;
+      }
+
+    case "error":
+      switch (action.type) {
+        case "RETRY_OPERATION":
+          return { type: "idle" };
+        case "RESET":
+          return { type: "idle" };
+        default:
+          return state;
+      }
+
+    case "complete":
+      return action.type === "START_QUERY"
+        ? { type: "analyzing_query", query: action.query, progress: 0 }
+        : action.type === "RESET"
+        ? { type: "idle" }
+        : state;
+
+    default:
+      return state;
+  }
+};
+
+// Enhanced hook for agentic RAG workflow management
+const useAgenticRAGWorkflow = () => {
+  const [state, dispatch] = useReducer(agenticRAGReducer, { type: "idle" });
+  const [toolResults, setToolResults] = useState<ToolResults>({});
+  const [contextSources, setContextSources] = useState<RetrievedSource[]>([]);
+
+  const processQuery = useCallback(async (query: string) => {
+    dispatch({ type: "START_QUERY", query });
+
+    try {
+      // Phase 1: Query Analysis & Planning
+      const analysisResponse = await fetch("/api/analyze-query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+
+      const plan: QueryPlan = await analysisResponse.json();
+      dispatch({ type: "QUERY_ANALYZED", plan });
+
+      // Auto-approve simple plans, require user approval for complex ones
+      if (plan.executionOrder.length <= 2) {
+        dispatch({
+          type: "PLAN_APPROVED",
+          executionOrder: plan.executionOrder,
+        });
+
+        // Phase 2: Tool Execution
+        const toolResults: ToolResults = {};
+        for (const toolName of plan.executionOrder) {
+          dispatch({ type: "TOOL_STARTED", tool: toolName });
+
+          const toolResponse = await fetch("/api/execute-tool", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tool: toolName,
+              query,
+              context: toolResults,
+            }),
+          });
+
+          const result = await toolResponse.json();
+          toolResults[toolName] = result;
+          setToolResults((prev) => ({ ...prev, [toolName]: result }));
+
+          dispatch({ type: "TOOL_COMPLETED", tool: toolName, result });
+        }
+
+        dispatch({ type: "ALL_TOOLS_COMPLETED", results: toolResults });
+
+        // Phase 3: Context Retrieval
+        const contextResponse = await fetch("/api/retrieve-context", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, toolResults }),
+        });
+
+        const { context, sources } = await contextResponse.json();
+        setContextSources(sources);
+        dispatch({ type: "CONTEXT_RETRIEVED", context, sources });
+
+        // Phase 4: Response Generation (handled by streaming hook)
+        // This would integrate with the streaming response system
+      }
+    } catch (error) {
+      dispatch({
+        type: "ERROR_OCCURRED",
+        error: error.message,
+        recoverable: true,
+      });
+    }
+  }, []);
+
+  const retryOperation = useCallback(() => {
+    dispatch({ type: "RETRY_OPERATION" });
+  }, []);
+
+  const resetWorkflow = useCallback(() => {
+    dispatch({ type: "RESET" });
+    setToolResults({});
+    setContextSources([]);
+  }, []);
+
+  return {
+    state,
+    toolResults,
+    contextSources,
+    processQuery,
+    retryOperation,
+    resetWorkflow,
+    // Computed properties for UI
+    isProcessing: !["idle", "complete", "error"].includes(state.type),
+    canRetry:
+      state.type === "error" && state.recovery_options.includes("retry"),
+    currentStep: state.type,
+    progress: calculateProgress(state),
+  };
+};
+
+// Helper function to calculate overall progress
+const calculateProgress = (state: AgenticRAGState): number => {
+  const stepWeights = {
+    idle: 0,
+    analyzing_query: 10,
+    planning_execution: 20,
+    executing_tools: 50,
+    retrieving_context: 70,
+    generating_response: 90,
+    complete: 100,
+    error: 0,
+  };
+
+  let baseProgress = stepWeights[state.type] || 0;
+
+  // Add sub-step progress for certain states
+  if (state.type === "analyzing_query") {
+    baseProgress += state.progress * 0.1; // 10% range for analysis
+  } else if (state.type === "executing_tools") {
+    const toolProgress =
+      (state.completed.length / state.activeTools.length) * 30;
+    baseProgress = 20 + toolProgress; // 30% range for tools (20-50%)
+  }
+
+  return Math.min(100, baseProgress);
+};
+
+// Types for the agentic system
+interface QueryPlan {
+  intent: "search" | "analysis" | "generation" | "multi_step";
+  complexity: "simple" | "moderate" | "complex";
+  requiredTools: string[];
+  executionOrder: string[];
+  estimatedDuration: number;
+  confidenceThreshold: number;
+}
+
+interface ToolResults {
+  [toolName: string]: {
+    success: boolean;
+    data: any;
+    duration: number;
+    confidence?: number;
+  };
+}
+
+interface ResponseMetadata {
+  sources: RetrievedSource[];
+  toolsUsed: string[];
+  confidence: number;
+  processingTime: number;
+  tokensGenerated: number;
+}
 ```
 
 ### Week 3: CSS Architecture & Design Systems
@@ -1697,3 +2450,294 @@ code --version  # VS Code with extensions
 6. **Stay Current**: Follow both companies' technical blogs, open-source contributions, and industry news
 
 This comprehensive study plan prepares you for both roles while maximizing the overlap in preparation time and ensuring you develop the deep technical skills both companies value.
+
+---
+
+## 🚀 AdventureCue-Inspired Application Features
+
+Based on your current agentic RAG architecture, here are recommended application features that would enhance your study and demonstrate advanced frontend capabilities:
+
+### Phase 1: Enhanced Chat Experience
+
+#### 🎯 **Multi-Modal Input Interface**
+
+- **Voice-to-Text Integration**: Web Speech API for voice queries
+- **Image Upload & Analysis**: Vision API integration for travel photos
+- **Document Upload**: PDF/text file ingestion for personalized recommendations
+- **Location-Based Queries**: Geolocation API for contextual travel advice
+
+```typescript
+// Multi-modal input component
+const MultiModalInput = () => {
+  const [inputMode, setInputMode] = useState<
+    "text" | "voice" | "image" | "location"
+  >("text");
+  const { startRecording, stopRecording, isRecording } = useVoiceInput();
+  const { uploadImage, analyzeImage } = useImageAnalysis();
+  const { getCurrentLocation } = useGeolocation();
+
+  return (
+    <div className="multi-modal-input">
+      <div className="input-mode-selector">
+        <button
+          onClick={() => setInputMode("text")}
+          className={inputMode === "text" ? "active" : ""}
+        >
+          💬 Text
+        </button>
+        <button
+          onClick={() => setInputMode("voice")}
+          className={inputMode === "voice" ? "active" : ""}
+        >
+          🎤 Voice
+        </button>
+        <button
+          onClick={() => setInputMode("image")}
+          className={inputMode === "image" ? "active" : ""}
+        >
+          📷 Image
+        </button>
+        <button
+          onClick={() => setInputMode("location")}
+          className={inputMode === "location" ? "active" : ""}
+        >
+          📍 Location
+        </button>
+      </div>
+
+      {/* Dynamic input interface based on mode */}
+      {inputMode === "text" && <TextInput />}
+      {inputMode === "voice" && <VoiceInput />}
+      {inputMode === "image" && <ImageUpload />}
+      {inputMode === "location" && <LocationPicker />}
+    </div>
+  );
+};
+```
+
+#### 🧠 **Conversation Memory & Context**
+
+- **Session Persistence**: Robust chat history across browser sessions
+- **Context Awareness**: Reference previous conversations intelligently
+- **User Preferences Learning**: Adaptive recommendations based on chat history
+- **Conversation Branching**: Multiple conversation threads per session
+
+#### 🎨 **Rich Message Formatting**
+
+- **Markdown Rendering**: Rich text responses with formatting
+- **Interactive Elements**: Buttons, links, and embedded actions in responses
+- **Code Syntax Highlighting**: For technical travel tips or scripts
+- **Expandable Content**: Collapsible sections for detailed information
+
+### Phase 2: Advanced Agentic Capabilities
+
+#### 🤖 **Autonomous Planning System**
+
+- **Multi-Step Itinerary Planning**: Complex travel route optimization
+- **Budget-Aware Recommendations**: Financial constraint consideration
+- **Real-Time Adaptations**: Weather/event-based plan modifications
+- **Collaborative Planning**: Multiple user input for group travel
+
+```typescript
+// Autonomous travel planner
+interface TravelPlan {
+  destination: string;
+  dates: { start: Date; end: Date };
+  budget: { min: number; max: number; currency: string };
+  preferences: TravelPreferences;
+  constraints: TravelConstraints[];
+}
+
+const useAutonomousPlannerAgent = () => {
+  const [planningState, setPlanningState] = useState<PlanningState>("idle");
+  const [currentPlan, setCurrentPlan] = useState<TravelPlan | null>(null);
+
+  const generatePlan = useCallback(async (requirements: TravelRequirements) => {
+    setPlanningState("analyzing");
+
+    // Phase 1: Analyze requirements and constraints
+    const analysis = await analyzeRequirements(requirements);
+
+    setPlanningState("researching");
+
+    // Phase 2: Research destinations and options
+    const options = await researchOptions(analysis);
+
+    setPlanningState("optimizing");
+
+    // Phase 3: Optimize itinerary
+    const optimizedPlan = await optimizeItinerary(options, requirements);
+
+    setPlanningState("validating");
+
+    // Phase 4: Validate feasibility
+    const validatedPlan = await validatePlan(optimizedPlan);
+
+    setPlanningState("complete");
+    setCurrentPlan(validatedPlan);
+
+    return validatedPlan;
+  }, []);
+
+  return { planningState, currentPlan, generatePlan };
+};
+```
+
+#### 🔧 **Advanced Tool Integration**
+
+- **Weather API Integration**: Real-time weather-based recommendations
+- **Transportation APIs**: Flight/train/bus booking integration
+- **Hotel/Restaurant APIs**: Live availability and pricing
+- **Currency Conversion**: Real-time exchange rates
+- **Translation Services**: Multi-language support
+
+#### 📊 **Real-Time Analytics Dashboard**
+
+- **Usage Metrics**: Query patterns and user behavior
+- **Performance Monitoring**: Response times and success rates
+- **Knowledge Base Analytics**: Most/least accessed content
+- **User Satisfaction Tracking**: Feedback and rating systems
+
+### Phase 3: Knowledge Management & Learning
+
+#### 📚 **Dynamic Knowledge Base**
+
+- **Content Auto-Categorization**: AI-powered content organization
+- **Semantic Tagging**: Automatic topic and theme extraction
+- **Knowledge Graph Visualization**: Interactive relationship mapping
+- **Duplicate Detection**: Intelligent content deduplication
+
+```typescript
+// Knowledge management system
+const useKnowledgeManager = () => {
+  const [knowledgeGraph, setKnowledgeGraph] = useState<KnowledgeNode[]>([]);
+
+  const ingestContent = useCallback(
+    async (content: string, metadata: ContentMetadata) => {
+      // Extract entities and relationships
+      const entities = await extractEntities(content);
+      const relationships = await identifyRelationships(entities, content);
+
+      // Create knowledge nodes
+      const nodes = entities.map((entity) => ({
+        id: generateId(),
+        type: entity.type,
+        label: entity.name,
+        content: entity.description,
+        confidence: entity.confidence,
+        relationships: relationships.filter(
+          (r) => r.source === entity.name || r.target === entity.name
+        ),
+      }));
+
+      // Update knowledge graph
+      setKnowledgeGraph((prev) => mergeNodes(prev, nodes));
+
+      // Generate embeddings for semantic search
+      const embeddings = await generateEmbeddings(content);
+
+      // Store in vector database
+      await storeEmbeddings({
+        content,
+        embeddings,
+        metadata: {
+          ...metadata,
+          entities: entities.map((e) => e.name),
+          relationships: relationships.length,
+        },
+      });
+    },
+    []
+  );
+
+  return { knowledgeGraph, ingestContent };
+};
+```
+
+#### 🔍 **Advanced Search Capabilities**
+
+- **Faceted Search**: Filter by location, activity type, season, budget
+- **Visual Search**: Find similar destinations by uploading photos
+- **Temporal Search**: "What was popular in Paris in 2019?" type queries
+- **Cross-Reference Search**: Find connections between different topics
+
+#### 🎯 **Personalization Engine**
+
+- **Behavioral Learning**: Adapt to user interaction patterns
+- **Preference Inference**: Learn unstated preferences from behavior
+- **Context Adaptation**: Different personas for different trip types
+- **Recommendation Confidence**: Show certainty levels for suggestions
+
+### Phase 4: Collaboration & Social Features
+
+#### 👥 **Multi-User Collaboration**
+
+- **Shared Sessions**: Multiple users in same conversation
+- **Plan Collaboration**: Group trip planning with voting/consensus
+- **Expert Networks**: Connect users with local experts
+- **Community Q&A**: User-generated content and answers
+
+#### 🌐 **Social Integration**
+
+- **Social Media Integration**: Import travel photos and posts
+- **Review Aggregation**: Combine reviews from multiple platforms
+- **Friend Recommendations**: Suggestions based on friend's travels
+- **Trip Sharing**: Export and share travel plans
+
+### Phase 5: Advanced UI/UX Features
+
+#### 🎨 **Adaptive Interface**
+
+- **Theme Customization**: User-controlled appearance settings
+- **Layout Adaptation**: Different layouts for different use cases
+- **Accessibility Excellence**: Full screen reader and keyboard support
+- **Mobile-First Design**: Progressive Web App capabilities
+
+#### 📱 **Progressive Web App**
+
+- **Offline Functionality**: Cached conversations and basic features
+- **Push Notifications**: Travel alerts and reminders
+- **Home Screen Install**: Native app-like experience
+- **Background Sync**: Update data when connection returns
+
+#### 🎭 **Interactive Visualizations**
+
+- **Interactive Maps**: Clickable destination exploration
+- **Timeline Visualization**: Travel itinerary timeline
+- **Budget Breakdown Charts**: Visual spending analysis
+- **Weather Overlays**: Climate data visualization
+
+### Implementation Priority & Learning Outcomes
+
+#### **Immediate Focus (Weeks 5-8)**:
+
+1. Enhanced chat interface with real-time streaming
+2. Multi-modal input capabilities
+3. Advanced state management for complex workflows
+4. Real-time status tracking and user feedback
+
+#### **Medium-term Goals (Weeks 9-12)**:
+
+1. Autonomous planning system implementation
+2. Knowledge graph visualization
+3. Advanced search and filtering
+4. Performance optimization for large datasets
+
+#### **Advanced Features (Weeks 13-16)**:
+
+1. Progressive Web App conversion
+2. Advanced accessibility implementation
+3. Multi-user collaboration features
+4. Production deployment and monitoring
+
+These features will showcase:
+
+- **Advanced React Patterns**: Complex state management, performance optimization
+- **AI/ML Integration**: Sophisticated agentic behaviors and tool orchestration
+- **Real-time Systems**: WebSocket/SSE implementation, live collaboration
+- **Data Visualization**: Interactive charts, maps, and knowledge graphs
+- **Accessibility**: WCAG compliance and inclusive design
+- **Performance**: Large-scale data handling and optimization
+- **Modern Web APIs**: Voice, location, camera, and offline capabilities
+
+Each feature can be implemented incrementally, allowing you to demonstrate progressive skill development while building a portfolio-worthy application that showcases all the competencies needed for both Amazon Prime Video and OpenAI frontend engineering roles.
