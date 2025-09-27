@@ -144,13 +144,91 @@ class ContentAnalysisModel
 }
 ```
 
-#### Day 5-7: Modern Web APIs & Performance
+#### Day 5-7: Data Structures & Algorithms for Frontend
 
-- [ ] **Web Workers**: Offloading AI computations
-- [ ] **Service Workers**: Caching strategies for AI results
-- [ ] **Intersection Observer**: Lazy loading of AI-powered components
-- [ ] **Performance APIs**: Measuring and optimizing AI integration
-- [ ] **WebAssembly**: High-performance computing in the browser
+- [ ] **Array/String Algorithms**: Two pointers, sliding window patterns
+- [ ] **Hash Maps/Sets**: Efficient lookups for AI data processing
+- [ ] **Tree Structures**: DOM manipulation, component hierarchies
+- [ ] **Graph Algorithms**: Dependency graphs, AI workflow modeling
+- [ ] **Dynamic Programming**: Memoization for expensive AI computations
+- [ ] **Big O Analysis**: Performance optimization for large datasets
+
+**Frontend DSA Practice Problems**:
+
+```javascript
+// 1. Debounce/Throttle implementation
+const debounce = (func, delay) => {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+};
+
+// 2. Virtual scrolling algorithm
+const calculateVisibleRange = (scrollTop, itemHeight, containerHeight) => {
+  const start = Math.floor(scrollTop / itemHeight);
+  const visibleCount = Math.ceil(containerHeight / itemHeight);
+  const end = start + visibleCount;
+  return { start, end };
+};
+
+// 3. LRU Cache for AI results
+class LRUCache {
+  constructor(capacity) {
+    this.capacity = capacity;
+    this.cache = new Map();
+  }
+
+  get(key) {
+    if (this.cache.has(key)) {
+      const value = this.cache.get(key);
+      this.cache.delete(key);
+      this.cache.set(key, value);
+      return value;
+    }
+    return -1;
+  }
+
+  put(key, value) {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.capacity) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    this.cache.set(key, value);
+  }
+}
+
+// 4. Tree traversal for component hierarchies
+class ComponentTree {
+  static findComponent(root, targetId) {
+    if (root.id === targetId) return root;
+
+    for (const child of root.children || []) {
+      const found = this.findComponent(child, targetId);
+      if (found) return found;
+    }
+
+    return null;
+  }
+
+  static getAllComponentsAtDepth(root, targetDepth, currentDepth = 0) {
+    if (currentDepth === targetDepth) return [root];
+    if (currentDepth > targetDepth) return [];
+
+    const result = [];
+    for (const child of root.children || []) {
+      result.push(
+        ...this.getAllComponentsAtDepth(child, targetDepth, currentDepth + 1)
+      );
+    }
+
+    return result;
+  }
+}
+```
 
 **Practice Project**: AI-Powered Video Player with Performance Monitoring
 
@@ -468,66 +546,7 @@ const AIComponent: React.FC<AIComponentProps> = ({
 
 **Daily Time Commitment**: 4-5 hours
 
-#### Day 1-2: Data Structures & Algorithms for Frontend
-
-- [ ] **Array/String Algorithms**: Two pointers, sliding window patterns
-- [ ] **Hash Maps/Sets**: Efficient lookups for AI data processing
-- [ ] **Tree Structures**: DOM manipulation, component hierarchies
-- [ ] **Graph Algorithms**: Dependency graphs, AI workflow modeling
-- [ ] **Dynamic Programming**: Memoization for expensive AI computations
-- [ ] **Big O Analysis**: Performance optimization for large datasets
-
-**Practice Problems**:
-
-```javascript
-// Frontend-specific algorithm problems
-// 1. Debounce/Throttle implementation
-const debounce = (func, delay) => {
-  let timeoutId;
-  return function (...args) {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func.apply(this, args), delay);
-  };
-};
-
-// 2. Virtual scrolling algorithm
-const calculateVisibleRange = (scrollTop, itemHeight, containerHeight) => {
-  const start = Math.floor(scrollTop / itemHeight);
-  const visibleCount = Math.ceil(containerHeight / itemHeight);
-  const end = start + visibleCount;
-  return { start, end };
-};
-
-// 3. LRU Cache for AI results
-class LRUCache {
-  constructor(capacity) {
-    this.capacity = capacity;
-    this.cache = new Map();
-  }
-
-  get(key) {
-    if (this.cache.has(key)) {
-      const value = this.cache.get(key);
-      this.cache.delete(key);
-      this.cache.set(key, value);
-      return value;
-    }
-    return -1;
-  }
-
-  put(key, value) {
-    if (this.cache.has(key)) {
-      this.cache.delete(key);
-    } else if (this.cache.size >= this.capacity) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
-    }
-    this.cache.set(key, value);
-  }
-}
-```
-
-#### Day 3-4: Unit Testing for AI Components
+#### Day 1-2: Unit Testing for AI Components
 
 - [ ] **Jest Advanced Patterns**: Mocking AI services, async testing
 - [ ] **React Testing Library**: Component testing best practices
@@ -625,180 +644,7 @@ describe("AIRecommendationPanel", () => {
 });
 ```
 
-#### Day 3-4: Frontend-Focused Data Structures & Algorithms
-
-- [ ] **Tree Traversal**: Component tree optimization, virtual DOM diffing
-- [ ] **Scheduling Algorithms**: React Fiber, task prioritization
-- [ ] **Memoization & Caching**: Dynamic programming for expensive renders
-- [ ] **Search Algorithms**: Efficient filtering for large datasets
-- [ ] **Sorting & Partitioning**: Data visualization optimization
-
-**AI-Specific Algorithm Practice**:
-
-```javascript
-// Implement efficient AI data processing algorithms
-class AIDataProcessor {
-  // Merge sort for confidence-based ranking
-  static mergeSort(predictions, key = "confidence") {
-    if (predictions.length <= 1) return predictions;
-
-    const mid = Math.floor(predictions.length / 2);
-    const left = this.mergeSort(predictions.slice(0, mid), key);
-    const right = this.mergeSort(predictions.slice(mid), key);
-
-    return this.merge(left, right, key);
-  }
-
-  static merge(left, right, key) {
-    const result = [];
-    let i = 0,
-      j = 0;
-
-    while (i < left.length && j < right.length) {
-      if (left[i][key] >= right[j][key]) {
-        result.push(left[i++]);
-      } else {
-        result.push(right[j++]);
-      }
-    }
-
-    return result.concat(left.slice(i)).concat(right.slice(j));
-  }
-
-  // Binary search for threshold-based filtering
-  static findConfidenceThreshold(sortedPredictions, threshold) {
-    let left = 0,
-      right = sortedPredictions.length - 1;
-    let result = -1;
-
-    while (left <= right) {
-      const mid = Math.floor((left + right) / 2);
-      if (sortedPredictions[mid].confidence >= threshold) {
-        result = mid;
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
-    }
-
-    return result;
-  }
-}
-
-// Trie for efficient AI model name searching
-class ModelTrie {
-  constructor() {
-    this.root = {};
-  }
-
-  insert(modelName) {
-    let node = this.root;
-    for (const char of modelName.toLowerCase()) {
-      if (!node[char]) node[char] = {};
-      node = node[char];
-    }
-    node.isEnd = true;
-    node.modelName = modelName;
-  }
-
-  searchSuggestions(prefix, limit = 10) {
-    let node = this.root;
-    for (const char of prefix.toLowerCase()) {
-      if (!node[char]) return [];
-      node = node[char];
-    }
-
-    const suggestions = [];
-    const dfs = (node) => {
-      if (suggestions.length >= limit) return;
-      if (node.isEnd) suggestions.push(node.modelName);
-
-      for (const char in node) {
-        if (char !== "isEnd" && char !== "modelName") {
-          dfs(node[char]);
-        }
-      }
-    };
-
-    dfs(node);
-    return suggestions;
-  }
-}
-```
-
-#### Day 5-7: Advanced Storybook & Design System Documentation
-
-- [ ] **Advanced Storybook Patterns**: Decorators, parameters, loaders
-- [ ] **Component Composition**: Complex story hierarchies
-- [ ] **Automated Documentation**: Auto-generating component docs from TypeScript
-- [ ] **Storybook Testing**: Unit tests, interaction tests, visual regression
-- [ ] **Design Token Integration**: Connecting design systems with Storybook
-- [ ] **Storybook Deployment**: Chromatic, static builds, CI integration
-
-**Practice Project**: Enterprise Storybook Configuration
-
-```javascript
-// Advanced Storybook decorators for AI components
-export const withAIContext = (Story, context) => {
-  const mockAIService = {
-    predict: async (input) => ({
-      result: "Mock prediction",
-      confidence: 0.85,
-      metadata: { modelVersion: "v1.0.0" },
-    }),
-    explain: async (input) => ({
-      features: [
-        { name: "feature1", importance: 0.8 },
-        { name: "feature2", importance: 0.6 },
-      ],
-    }),
-  };
-
-  return (
-    <AIServiceContext.Provider value={mockAIService}>
-      <Story {...context} />
-    </AIServiceContext.Provider>
-  );
-};
-
-// Global decorators in preview.js
-export const decorators = [
-  withAIContext,
-  (Story) => (
-    <div style={{ padding: "2rem", backgroundColor: "#f5f5f5" }}>
-      <Story />
-    </div>
-  ),
-];
-
-// Advanced parameters for AI components
-export const parameters = {
-  actions: { argTypesRegex: "^on[A-Z].*" },
-  controls: {
-    matchers: {
-      color: /(background|color)$/i,
-      date: /Date$/,
-    },
-  },
-  docs: {
-    extractComponentDescription: (component, { source }) => {
-      const docgenInfo = component.__docgenInfo;
-      return docgenInfo?.description || "AI-powered component";
-    },
-  },
-  viewport: {
-    viewports: {
-      ...INITIAL_VIEWPORTS,
-      aiDashboard: {
-        name: "AI Dashboard",
-        styles: { width: "1440px", height: "900px" },
-      },
-    },
-  },
-};
-```
-
-#### Integration & E2E Testing
+#### Day 3-4: Integration & E2E Testing
 
 - [ ] **Playwright/Cypress**: Full application testing
 - [ ] **Visual Regression**: Automated UI testing
