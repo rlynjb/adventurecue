@@ -1,5 +1,11 @@
 # Code Quality & Readability Recommendations
 
+## Prompts
+
+in my comprehensive-frontend-study-plan.md file, phase 1, week 1, ES6+ Deep Dive: async/await, generators, symbols, proxies..
+in my src/ files, recommend improvements that practices this.
+do not modify, add files or execute. i want a list of recommendation and i'll go through each item on my own.
+
 _Notes for future development and code improvements_
 
 ## Overview
