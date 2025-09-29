@@ -6,6 +6,8 @@ Based on my examination of your current src/ files, here are specific ES6+ impro
 
 ### 1. **Async/Await & Generators - Enhanced Streaming API (`src/utils/chat-api.ts`)**
 
+- ref: https://medium.com/@Superbinary/what-is-the-difference-between-promise-generator-and-async-fd69158dfbfc
+
 **Current Issue**: Basic async/await usage
 **Improvements**:
 
